@@ -1,4 +1,6 @@
-public class Board:Auditable
+namespace core.Models;
+
+public class Board : Auditable
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -10,7 +12,8 @@ public class Board:Auditable
     public ICollection<BoardComponent> BoardComponents { get; set; } = new List<BoardComponent>();
 }
 
-public class BoardComponent:Auditable
+
+public class BoardComponent : Auditable
 {
     public int BoardId { get; set; }
     public Board Board { get; set; } = null!;

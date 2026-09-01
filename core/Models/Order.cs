@@ -1,4 +1,6 @@
-public class Order: Auditable
+namespace core.Models;
+
+public class Order : Auditable
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
