@@ -1,3 +1,4 @@
+using core.Models;
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepository;
@@ -59,6 +60,31 @@ public class OrderService : IOrderService
         var updatedOrder = await _orderRepository.UpdateAsync(existingOrder);
         _logger.LogInformation("Order {OrderId} was successfully updated.", updatedOrder.Id);
         return updatedOrder;
+    }
+
+    public async Task<Order?> UpdateBoardAssignmentsAsync(int orderId, IEnumerable<int> boardIds)
+    {
+        _logger.LogInformation("Updating board assignments for order {OrderId}.", orderId);
+
+        if (boardIds is null)
+        {
+            throw new ArgumentException("Board IDs are required.", nameof(boardIds));
+        }
+
+        var normalizedBoardIds = boardIds.ToList();
+        if (normalizedBoardIds.Any(boardId => boardId <= 0))
+        {
+            throw new ArgumentException("Board IDs must be greater than zero.", nameof(boardIds));
+        }
+
+        var existingOrder = await _orderRepository.GetByIdAsync(orderId);
+        if (existingOrder is null)
+        {
+            _logger.LogWarning("Board assignment update requested for missing order {OrderId}.", orderId);
+            return null;
+        }
+
+        return await _orderRepository.UpdateBoardAssignmentsAsync(orderId, normalizedBoardIds);
     }
 
     public async Task<bool> DeleteAsync(int id)

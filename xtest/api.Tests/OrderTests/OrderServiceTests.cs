@@ -1,3 +1,4 @@
+using core.Models;
 using Xunit;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
@@ -29,5 +30,33 @@ public class OrderServiceTests
         {
             Assert.Contains(result, o => o.Id == order.Id && o.Name == order.Name && o.Description == order.Description && o.OrderDate == order.OrderDate);
         }
+    }
+
+    [Fact]
+    public async Task UpdateBoardAssignmentsAsync_Updates_Only_Board_Associations()
+    {
+        // Arrange
+        var fakeLogger = A.Fake<ILogger<OrderService>>();
+        var fakeRepository = A.Fake<IOrderRepository>();
+        var expectedOrder = new Order
+        {
+            Id = 1,
+            Name = "Order 1",
+            Description = "Description 1",
+            OrderDate = new DateTime(2026, 9, 1)
+        };
+
+        A.CallTo(() => fakeRepository.GetByIdAsync(1)).Returns(Task.FromResult<Order?>(expectedOrder));
+        A.CallTo(() => fakeRepository.UpdateBoardAssignmentsAsync(1, A<IEnumerable<int>>.That.Matches(ids => ids.SequenceEqual(new[] { 10, 20 }))))
+            .Returns(Task.FromResult<Order?>(expectedOrder));
+
+        var orderService = new OrderService(fakeRepository, fakeLogger);
+
+        // Act
+        var result = await orderService.UpdateBoardAssignmentsAsync(1, new[] { 10, 20 });
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(expectedOrder.Id, result!.Id);
     }
 }

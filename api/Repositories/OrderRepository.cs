@@ -52,6 +52,96 @@ public class OrderRepository : IOrderRepository
         return order;
     }
 
+    public async Task<Order?> UpdateBoardAssignmentsAsync(int orderId, IEnumerable<int> boardIds)
+    {
+        _logger.LogInformation("Updating board assignments for order {OrderId}.", orderId);
+
+        if (boardIds is null)
+        {
+            throw new ArgumentException("Board IDs are required.", nameof(boardIds));
+        }
+
+        var requestedBoardIds = boardIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+
+        if (requestedBoardIds.Count != boardIds.Count())
+        {
+            throw new ArgumentException("Duplicate or invalid board IDs were supplied.", nameof(boardIds));
+        }
+
+        if (requestedBoardIds.Count == 0)
+        {
+            var currentAssignments = await _context.OrderBoards
+                .Where(ob => ob.OrderId == orderId)
+                .ToListAsync();
+
+            if (currentAssignments.Count > 0)
+            {
+                _context.OrderBoards.RemoveRange(currentAssignments);
+                await _context.SaveChangesAsync();
+            }
+
+            return await _context.Orders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+        }
+
+        var orderExists = await _context.Orders.AnyAsync(o => o.Id == orderId);
+        if (!orderExists)
+        {
+            _logger.LogWarning("Board assignment update requested for missing order {OrderId}.", orderId);
+            return null;
+        }
+
+        var validBoardIds = await _context.Boards
+            .Where(b => requestedBoardIds.Contains(b.Id))
+            .Select(b => b.Id)
+            .ToListAsync();
+
+        if (validBoardIds.Count != requestedBoardIds.Count)
+        {
+            throw new ArgumentException("One or more board IDs do not exist.", nameof(boardIds));
+        }
+
+        var existingAssignments = await _context.OrderBoards
+            .Where(ob => ob.OrderId == orderId)
+            .ToListAsync();
+
+        var currentBoardIds = existingAssignments.Select(ob => ob.BoardId).ToHashSet();
+        var targetBoardIds = requestedBoardIds.ToHashSet();
+
+        var assignmentsToRemove = existingAssignments
+            .Where(ob => !targetBoardIds.Contains(ob.BoardId))
+            .ToList();
+
+        if (assignmentsToRemove.Count > 0)
+        {
+            _context.OrderBoards.RemoveRange(assignmentsToRemove);
+        }
+
+        var assignmentsToAdd = targetBoardIds
+            .Where(boardId => !currentBoardIds.Contains(boardId))
+            .Select(boardId => new OrderBoard
+            {
+                OrderId = orderId,
+                BoardId = boardId
+            })
+            .ToList();
+
+        if (assignmentsToAdd.Count > 0)
+        {
+            await _context.OrderBoards.AddRangeAsync(assignmentsToAdd);
+        }
+
+        await _context.SaveChangesAsync();
+
+        return await _context.Orders
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         _logger.LogInformation("Attempting to delete order {OrderId}.", id);

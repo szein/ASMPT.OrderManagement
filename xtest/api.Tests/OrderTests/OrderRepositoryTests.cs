@@ -1,3 +1,4 @@
+using core.Models;
 using Xunit;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;

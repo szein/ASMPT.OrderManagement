@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using core.Models;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -91,6 +92,36 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [HttpPut("{id:int}/boards")]
+    public async Task<ActionResult<Order>> UpdateBoards(int id, [FromBody] UpdateOrderBoardsRequest request)
+    {
+        _logger.LogInformation("PUT /api/orders/{OrderId}/boards requested.", id);
+
+        if (request is null)
+        {
+            _logger.LogWarning("Update board assignments failed because the request body was null for order {OrderId}.", id);
+            return BadRequest();
+        }
+
+        try
+        {
+            var order = await _orderService.UpdateBoardAssignmentsAsync(id, request.BoardIds);
+            if (order is null)
+            {
+                _logger.LogWarning("Board assignment update failed because order {OrderId} was not found.", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Board assignments for order {OrderId} updated successfully.", id);
+            return Ok(order);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Validation failed while updating board assignments for order {OrderId}.", id);
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -110,3 +141,4 @@ public class OrdersController : ControllerBase
 
 public record CreateOrderRequest(string Name, string Description, DateTime OrderDate);
 public record UpdateOrderRequest(string Name, string Description, DateTime OrderDate);
+public record UpdateOrderBoardsRequest(List<int> BoardIds);

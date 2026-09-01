@@ -28,6 +28,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IBoardRepository, BoardRepository>();
+builder.Services.AddScoped<IBoardService, BoardService>();
+builder.Services.AddScoped<IComponentRepository, ComponentRepository>();
+builder.Services.AddScoped<IComponentService, ComponentService>();
+builder.Services.AddScoped<IComponentTypeRepository, ComponentTypeRepository>();
+builder.Services.AddScoped<IComponentTypeService, ComponentTypeService>();
 
 //Services and Controllers
 builder.Services.AddControllers();
