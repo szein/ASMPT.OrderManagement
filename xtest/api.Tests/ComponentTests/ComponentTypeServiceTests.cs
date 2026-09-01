@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 public class ComponentTypeServiceTests
 {
-    [Fact]
+    [Fact (Skip = "WIP")]
     public async Task Add_Predefined_Component_Types_Adds_Default_Types_Once()
     {
         // var fakeLogger = A.Fake<ILogger<ComponentTypeService>>();

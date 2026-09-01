@@ -23,3 +23,5 @@ public class BoardComponent : Auditable
 
     public int Quantity { get; set; }
 }
+
+public record BoardComponentAssignment(int ComponentId, int Quantity);

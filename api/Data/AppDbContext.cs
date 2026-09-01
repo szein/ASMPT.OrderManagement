@@ -8,6 +8,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderBoard> OrderBoards { get; set; }
     public DbSet<Board> Boards { get; set; }
+    public DbSet<BoardComponent> BoardComponents { get; set; }
     public DbSet<Component> Components { get; set; }
     public DbSet<ComponentType> ComponentTypes { get; set; }
 
@@ -32,6 +33,19 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             .HasOne(ob => ob.Board)
             .WithMany(b => b.OrderBoards)
             .HasForeignKey(ob => ob.BoardId);
+
+        modelBuilder.Entity<BoardComponent>()
+            .HasKey(bc => new { bc.BoardId, bc.ComponentId });
+
+        modelBuilder.Entity<BoardComponent>()
+            .HasOne(bc => bc.Board)
+            .WithMany(b => b.BoardComponents)
+            .HasForeignKey(bc => bc.BoardId);
+
+        modelBuilder.Entity<BoardComponent>()
+            .HasOne(bc => bc.Component)
+            .WithMany(c => c.BoardComponents)
+            .HasForeignKey(bc => bc.ComponentId);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

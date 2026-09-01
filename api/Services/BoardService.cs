@@ -64,6 +64,31 @@ public class BoardService : IBoardService
         return updatedBoard;
     }
 
+    public async Task<Board?> UpdateComponentAssignmentsAsync(int boardId, IEnumerable<BoardComponentAssignment> componentAssignments)
+    {
+        _logger.LogInformation("Updating component assignments for board {BoardId}.", boardId);
+
+        if (componentAssignments is null)
+        {
+            throw new ArgumentException("Component assignments are required.", nameof(componentAssignments));
+        }
+
+        var existingBoard = await _boardRepository.GetByIdAsync(boardId);
+        if (existingBoard is null)
+        {
+            _logger.LogWarning("Component assignment update requested for missing board {BoardId}.", boardId);
+            return null;
+        }
+
+        var normalizedAssignments = componentAssignments.ToList();
+        if (normalizedAssignments.Any(a => a.ComponentId <= 0 || a.Quantity <= 0))
+        {
+            throw new ArgumentException("Each component assignment must include a valid component ID and quantity greater than zero.", nameof(componentAssignments));
+        }
+
+        return await _boardRepository.UpdateComponentAssignmentsAsync(boardId, normalizedAssignments);
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         _logger.LogInformation("Delete request received for board {BoardId}.", id);

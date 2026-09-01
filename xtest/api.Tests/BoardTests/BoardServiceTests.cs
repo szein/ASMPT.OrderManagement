@@ -30,4 +30,44 @@ public class BoardServiceTests
             Assert.Contains(result, b => b.Id == board.Id && b.Name == board.Name && b.Description == board.Description && b.Length == board.Length && b.Width == board.Width);
         }
     }
+
+    [Fact]
+    public async Task UpdateComponentAssignmentsAsync_Updates_Only_Board_Component_Associations()
+    {
+        var fakeLogger = A.Fake<ILogger<BoardService>>();
+        var fakeRepository = A.Fake<IBoardRepository>();
+        var requestedAssignments = new[]
+        {
+            new BoardComponentAssignment(10, 2),
+            new BoardComponentAssignment(20, 3)
+        };
+
+        A.CallTo(() => fakeRepository.GetByIdAsync(1)).Returns(Task.FromResult<Board?>(new Board
+        {
+            Id = 1,
+            Name = "Board 1",
+            Description = "Description 1",
+            Length = 10.5,
+            Width = 8.5
+        }));
+
+        A.CallTo(() => fakeRepository.UpdateComponentAssignmentsAsync(1, A<IEnumerable<BoardComponentAssignment>>.That.Matches(ids => ids.SequenceEqual(requestedAssignments))))
+            .Returns(Task.FromResult<Board?>(new Board
+            {
+                Id = 1,
+                Name = "Board 1",
+                Description = "Description 1",
+                Length = 10.5,
+                Width = 8.5
+            }));
+
+        var boardService = new BoardService(fakeRepository, fakeLogger);
+
+        var result = await boardService.UpdateComponentAssignmentsAsync(1, requestedAssignments);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result!.Id);
+        A.CallTo(() => fakeRepository.GetByIdAsync(1)).MustHaveHappened();
+        A.CallTo(() => fakeRepository.UpdateComponentAssignmentsAsync(1, A<IEnumerable<BoardComponentAssignment>>.That.Matches(ids => ids.SequenceEqual(requestedAssignments)))).MustHaveHappened();
+    }
 }

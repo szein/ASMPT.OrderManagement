@@ -92,6 +92,36 @@ public class BoardsController : ControllerBase
         }
     }
 
+    [HttpPut("{id:int}/components")]
+    public async Task<ActionResult<Board>> UpdateComponents(int id, [FromBody] UpdateBoardComponentsRequest request)
+    {
+        _logger.LogInformation("PUT /api/boards/{BoardId}/components requested.", id);
+
+        if (request is null)
+        {
+            _logger.LogWarning("Update board components failed because the request body was null for board {BoardId}.", id);
+            return BadRequest();
+        }
+
+        try
+        {
+            var board = await _boardService.UpdateComponentAssignmentsAsync(id, request.Components);
+            if (board is null)
+            {
+                _logger.LogWarning("Board component update failed because board {BoardId} was not found.", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Board components for board {BoardId} updated successfully.", id);
+            return Ok(board);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Validation failed while updating board components for board {BoardId}.", id);
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -111,3 +141,4 @@ public class BoardsController : ControllerBase
 
 public record CreateBoardRequest(string Name, string Description, double Length, double Width);
 public record UpdateBoardRequest(string Name, string Description, double Length, double Width);
+public record UpdateBoardComponentsRequest(List<BoardComponentAssignment> Components);
