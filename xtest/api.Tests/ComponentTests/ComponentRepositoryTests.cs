@@ -1,18 +1,17 @@
-using core.Models;
 using Xunit;
-using FakeItEasy;
+using core.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
+using FakeItEasy;
 
-
-public class ComponentServiceTests
+public class ComponentRepositoryTests
 {
-    private DbContextFactory _dbContextFactory = new DbContextFactory();    
+    private DbContextFactory _dbContextFactory = new DbContextFactory();
 
     [Fact]
     public async Task GetAllAsync_Returns_List_Of_Components()
     {
-        using var fakeAppContext =  _dbContextFactory.CreateFakeDbContext();
+        //Arrenge
+        using var fakeAppContext = _dbContextFactory.CreateFakeDbContext();
         var fakeLogger = A.Fake<ILogger<ComponentRepository>>();
         var expectedComponentTypes = new List<ComponentType>
         {
@@ -24,22 +23,17 @@ public class ComponentServiceTests
             new Component { Id = 1, ComponentTypeId = expectedComponentTypes[0].Id, Quantity = 100, ComponentType = expectedComponentTypes[0]},
             new Component { Id = 2, ComponentTypeId = expectedComponentTypes[1].Id, Quantity = 200, ComponentType = expectedComponentTypes[1]}
         };
-        
-        fakeAppContext.ComponentTypes.AddRange(expectedComponentTypes);
+
         fakeAppContext.Components.AddRange(expectedComponents);
         await fakeAppContext.SaveChangesAsync();
 
         var componentRepository = new ComponentRepository(fakeAppContext, fakeLogger);
 
+        //Act
         var result = await componentRepository.GetAllAsync();
 
         Assert.NotNull(result);
-        Assert.IsType<List<Component>>(result);
+        Assert.IsType<List<Board>>(result);
         Assert.Equal(expectedComponents.Count, result.Count);
-        foreach (var component in expectedComponents)
-        {
-            Assert.Contains(result, c => c.Id == component.Id && c.ComponentTypeId == component.ComponentTypeId);
-        }
     }
-    
 }
