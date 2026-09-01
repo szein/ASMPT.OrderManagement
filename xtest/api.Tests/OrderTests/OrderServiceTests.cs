@@ -1,0 +1,33 @@
+using Xunit;
+using FakeItEasy;
+using Microsoft.Extensions.Logging;
+
+public class OrderServiceTests
+{
+    [Fact]
+    public async Task  Get_All_Orders_Returns_List_Of_Orders()
+    {
+        // Arrange
+        var fakeLogger = A.Fake<ILogger<OrderService>>();
+        var fakeRepository = A.Fake<IOrderRepository>();
+        var expectedOrders = new List<Order>
+        {
+            new Order { Id = 1, Name = "Order 1", Description = "Description 1", OrderDate = new DateTime(2026, 9, 1) },
+            new Order { Id = 2, Name = "Order 2", Description = "Description 2", OrderDate = new DateTime(2026, 9, 2) }
+        };
+        A.CallTo(() => fakeRepository.GetAllAsync()).Returns(Task.FromResult(expectedOrders));
+        var orderService = new OrderService(fakeRepository, fakeLogger);
+
+        // Act
+        var result = await orderService.GetAllAsync();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.IsType<List<Order>>(result);
+        Assert.Equal(expectedOrders.Count, result.Count);
+        foreach (var order in expectedOrders)
+        {
+            Assert.Contains(result, o => o.Id == order.Id && o.Name == order.Name && o.Description == order.Description && o.OrderDate == order.OrderDate);
+        }
+    }
+}
