@@ -126,7 +126,7 @@ public class BoardRepository : IBoardRepository
         {
             if (currentAssignmentsByComponentId.TryGetValue(assignment.ComponentId, out var existingAssignment))
             {
-                existingAssignment.Quantity = assignment.Quantity;
+                existingAssignment.BoardComponentQuantity = assignment.Quantity;
             }
             else
             {
@@ -134,7 +134,7 @@ public class BoardRepository : IBoardRepository
                 {
                     BoardId = boardId,
                     ComponentId = assignment.ComponentId,
-                    Quantity = assignment.Quantity
+                    BoardComponentQuantity = assignment.Quantity
                 });
             }
         }
