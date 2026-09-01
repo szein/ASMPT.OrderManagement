@@ -21,6 +21,14 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Order>().HasKey(o => o.Id);
+
+        modelBuilder.Entity<Board>().HasKey(b => b.Id);
+
+        modelBuilder.Entity<Component>().HasKey(c => c.Id);
+        
+        modelBuilder.Entity<ComponentType>().HasKey(ct => ct.Id);
+
         modelBuilder.Entity<OrderBoard>()
             .HasKey(ob => new { ob.OrderId, ob.BoardId });
 

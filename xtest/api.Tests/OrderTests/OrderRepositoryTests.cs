@@ -5,19 +5,22 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 
 public class OrderRepositoryTests
-{
+{   
+    private DbContextFactory _dbContextFactory = new DbContextFactory();
+
     [Fact]
     public async Task GetAllAsync_Returns_List_Of_Orders()
     {
         // Arrange
+        using var fakeAppContext = _dbContextFactory.CreateFakeDbContext();
         var fakeLogger = A.Fake<ILogger<OrderRepository>>();
-        var fakeAppContext = A.Fake<AppDbContext>();
         var expectedOrders = new List<Order>
         {
             new Order { Id = 1, Name = "Order 1", Description = "Description 1", OrderDate = new DateTime(2026, 9, 1) },
             new Order { Id = 2, Name = "Order 2", Description = "Description 2", OrderDate = new DateTime(2026, 9, 2) }
-        };
-        A.CallTo(() => fakeAppContext.Orders.ToListAsync<Order>()).Returns(Task.FromResult(expectedOrders));
+        };        
+        fakeAppContext.Orders.AddRange(expectedOrders);
+        await fakeAppContext.SaveChangesAsync();
         var orderRepository = new OrderRepository(fakeAppContext, fakeLogger);
 
         // Act

@@ -6,18 +6,22 @@ using Microsoft.EntityFrameworkCore;
 
 public class BoardRepositoryTests
 {
+    private DbContextFactory _dbContextFactory = new DbContextFactory();
     [Fact]
     public async Task GetAllAsync_Returns_List_Of_Boards()
     {
+        using var fakeAppContext = _dbContextFactory.CreateFakeDbContext();
         var fakeLogger = A.Fake<ILogger<BoardRepository>>();
-        var fakeAppContext = A.Fake<AppDbContext>();
         var expectedBoards = new List<Board>
         {
             new Board { Id = 1, Name = "Board 1", Description = "Description 1", Length = 10.5, Width = 8.5 },
             new Board { Id = 2, Name = "Board 2", Description = "Description 2", Length = 12.0, Width = 9.0 }
         };
 
-        A.CallTo(() => fakeAppContext.Boards.ToListAsync<Board>()).Returns(Task.FromResult(expectedBoards));
+        fakeAppContext.Boards.AddRange(expectedBoards);
+        await fakeAppContext.SaveChangesAsync();
+
+        //A.CallTo(() => fakeAppContext.Boards.ToListAsync<Board>()).Returns(Task.FromResult(expectedBoards));
 
         var boardRepository = new BoardRepository(fakeAppContext, fakeLogger);
 
