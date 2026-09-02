@@ -17,7 +17,7 @@ public class BoardRepository : IBoardRepository
 
         return await _context.Boards
             .Include(b => b.BoardComponents)
-            .ThenInclude(bc => bc.Component)
+            // .ThenInclude(bc => bc.Component)
             .AsNoTracking()
             .OrderBy(b => b.Id)
             .ToListAsync();

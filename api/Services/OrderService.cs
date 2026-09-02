@@ -16,7 +16,7 @@ public class OrderService : IOrderService
         return await _orderRepository.GetAllAsync();
     }
 
-    public async Task<Order?> GetByIdAsync(int id)
+    public async Task<Order?> GetByIdAsync(Guid id)
     {
         _logger.LogInformation("Service request received to fetch order {OrderId}.", id);
         return await _orderRepository.GetByIdAsync(id);
@@ -40,7 +40,7 @@ public class OrderService : IOrderService
         return createdOrder;
     }
 
-    public async Task<Order?> UpdateAsync(int id, string name, string description, DateTime orderDate)
+    public async Task<Order?> UpdateAsync(Guid id, string name, string description, DateTime orderDate)
     {
         _logger.LogInformation("Updating order {OrderId}.", id);
 
@@ -62,7 +62,7 @@ public class OrderService : IOrderService
         return updatedOrder;
     }
 
-    public async Task<Order?> UpdateBoardAssignmentsAsync(int orderId, IEnumerable<int> boardIds)
+    public async Task<Order?> UpdateBoardAssignmentsAsync(Guid orderId, IEnumerable<int> boardIds)
     {
         _logger.LogInformation("Updating board assignments for order {OrderId}.", orderId);
 
@@ -87,7 +87,7 @@ public class OrderService : IOrderService
         return await _orderRepository.UpdateBoardAssignmentsAsync(orderId, normalizedBoardIds);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         _logger.LogInformation("Delete request received for order {OrderId}.", id);
         var deleted = await _orderRepository.DeleteAsync(id);

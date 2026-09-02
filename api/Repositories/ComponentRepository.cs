@@ -71,4 +71,16 @@ public class ComponentRepository : IComponentRepository
         _logger.LogInformation("Component {ComponentId} was deleted successfully.", id);
         return true;
     }
+
+    public async Task<int> GetAvailableQuantityAsync(int componentTypeId)
+    {
+        _logger.LogInformation("Fetching available quantity for component type {ComponentTypeId}.", componentTypeId);
+
+        var availableQuantity = await _context.Components
+            .Where(c => c.ComponentTypeId == componentTypeId)
+            .SumAsync(c => c.Quantity);//TODO: improve this function
+
+        _logger.LogInformation("Available quantity for component type {ComponentTypeId} is {AvailableQuantity}.", componentTypeId, availableQuantity);
+        return availableQuantity;
+    }
 }

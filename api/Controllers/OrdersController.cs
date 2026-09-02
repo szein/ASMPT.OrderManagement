@@ -23,8 +23,8 @@ public class OrdersController : ControllerBase
         return Ok(orders);
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<Order>> GetById(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<Order>> GetById(Guid id)
     {
         _logger.LogInformation("GET /api/orders/{OrderId} requested.", id);
         var order = await _orderService.GetByIdAsync(id);
@@ -63,7 +63,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public async Task<ActionResult<Order>> Update(int id, [FromBody] UpdateOrderRequest request)
+    public async Task<ActionResult<Order>> Update(Guid id, [FromBody] UpdateOrderRequest request)
     {
         _logger.LogInformation("PUT /api/orders/{OrderId} requested.", id);
 
@@ -92,8 +92,8 @@ public class OrdersController : ControllerBase
         }
     }
 
-    [HttpPut("{id:int}/boards")]
-    public async Task<ActionResult<Order>> UpdateBoards(int id, [FromBody] UpdateOrderBoardsRequest request)
+    [HttpPut("{id:guid}/boards")]
+    public async Task<ActionResult<Order>> UpdateBoards(Guid id, [FromBody] UpdateOrderBoardsRequest request)
     {
         _logger.LogInformation("PUT /api/orders/{OrderId}/boards requested.", id);
 
@@ -123,7 +123,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         _logger.LogInformation("DELETE /api/orders/{OrderId} requested.", id);
         var deleted = await _orderService.DeleteAsync(id);

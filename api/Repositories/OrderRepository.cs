@@ -21,7 +21,7 @@ public class OrderRepository : IOrderRepository
             .ToListAsync();
     }
 
-    public async Task<Order?> GetByIdAsync(int id)
+    public async Task<Order?> GetByIdAsync(Guid id)
     {
         _logger.LogInformation("Fetching order with Id {OrderId}.", id);
 
@@ -52,7 +52,7 @@ public class OrderRepository : IOrderRepository
         return order;
     }
 
-    public async Task<Order?> UpdateBoardAssignmentsAsync(int orderId, IEnumerable<int> boardIds)
+    public async Task<Order?> UpdateBoardAssignmentsAsync(Guid orderId, IEnumerable<int> boardIds)
     {
         _logger.LogInformation("Updating board assignments for order {OrderId}.", orderId);
 
@@ -142,7 +142,7 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.Id == orderId);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         _logger.LogInformation("Attempting to delete order {OrderId}.", id);
 

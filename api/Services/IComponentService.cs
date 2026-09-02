@@ -7,4 +7,5 @@ public interface IComponentService
     Task<Component> CreateAsync(ComponentType componentType, int quantity);
     Task<Component?> UpdateAsync(int id, int componentTypeId, int quantity);
     Task<bool> DeleteAsync(int id);
+    Task<int> GetAvailableQuantityAsync(int? componentTypeId, ComponentType? componentType);
 }

@@ -96,6 +96,27 @@ public class ComponentService : IComponentService
         return updatedComponent;
     }
 
+    public async Task<int> GetAvailableQuantityAsync(int? componentTypeId, ComponentType? componentType)
+    {
+        _logger.LogInformation("Fetching available quantity for component type {ComponentTypeId}.", componentTypeId ?? componentType?.Id);
+
+        if (componentTypeId is null && componentType is null)
+        {
+            throw new ArgumentException("Either component type ID or component type must be provided.");
+        }
+
+        if (componentTypeId is not null && componentType is not null && componentTypeId != componentType.Id)
+        {
+            throw new ArgumentException("Component type ID and component type do not match.");
+        }
+
+        int resolvedComponentTypeId = componentTypeId ?? componentType!.Id;
+        
+
+        var availableQuantity = await _componentRepository.GetAvailableQuantityAsync(resolvedComponentTypeId);
+        _logger.LogInformation("Available quantity for component type {ComponentTypeId} is {AvailableQuantity}.", resolvedComponentTypeId, availableQuantity);
+        return availableQuantity;
+    }
     public async Task<bool> DeleteAsync(int id)
     {
         _logger.LogInformation("Delete request received for component {ComponentId}.", id);
