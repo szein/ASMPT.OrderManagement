@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace core.Models;
 
 public class Board : Auditable
@@ -41,9 +43,11 @@ public class Board : Auditable
 public class BoardComponent : Auditable
 {
     public int BoardId { get; set; }
+    [JsonIgnore]
     public Board Board { get; set; } = null!;
 
     public int ComponentId { get; set; }
+    [JsonIgnore]
     public Component Component { get; set; } = null!;
 
     //TODO: Consider checking if Quantity here is available in the Component before adding to BoardComponent

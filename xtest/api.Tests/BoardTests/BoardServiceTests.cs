@@ -75,21 +75,23 @@ public class BoardServiceTests
     public async Task UpdateComponentAssignmentsAsync_Returns_Error_If_Component_Quantity_Exceeded()
     {
         var dbContext = new DbContextFactory().CreateFakeDbContext();
-        int exptectedComponentTypeId = 1;
-        dbContext.ComponentTypes.Add(new ComponentType { Id = exptectedComponentTypeId, Name = "Component Type 1", Description = "Description 1" });
-        dbContext.Components.Add(new Component { Id = 10, ComponentTypeId = exptectedComponentTypeId, Quantity = 5 });
+        int exptectedComponentId = 10;
+        int exptectedBoardId = 10;
+        dbContext.ComponentTypes.Add(new ComponentType { Id = 1, Name = "Component Type 1", Description = "Description 1" });
+        dbContext.Components.Add(new Component { Id = exptectedComponentId, ComponentTypeId = 1, Quantity = 5 });
+        dbContext.Boards.Add(new Board { Id = exptectedBoardId, Name = "Board 1", Description = "Description 1", Length = 10.5, Width = 8.5 });
         await dbContext.SaveChangesAsync();        
         var repository = new BoardRepository(dbContext, A.Fake<ILogger<BoardRepository>>());
 
         var boardService = new BoardService(repository, A.Fake<ILogger<BoardService>>());
         var requestedAssignments = new[]
         {
-            new BoardComponentAssignment(10, 10) // Exceeds available quantity
+            new BoardComponentAssignment(exptectedComponentId, 10) // Exceeds available quantity
         };
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await boardService.UpdateComponentAssignmentsAsync(1, requestedAssignments)
+            await boardService.UpdateComponentAssignmentsAsync(exptectedBoardId, requestedAssignments)
         );
 
     }

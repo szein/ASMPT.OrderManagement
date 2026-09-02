@@ -16,8 +16,8 @@ public class OrderRepositoryTests
         var fakeLogger = A.Fake<ILogger<OrderRepository>>();
         var expectedOrders = new List<Order>
         {
-            new Order { Id = 1, Name = "Order 1", Description = "Description 1", OrderDate = new DateTime(2026, 9, 1) },
-            new Order { Id = 2, Name = "Order 2", Description = "Description 2", OrderDate = new DateTime(2026, 9, 2) }
+            new Order { Id = Guid.NewGuid(), Name = "Order 1", Description = "Description 1", OrderDate = new DateTime(2026, 9, 1) },
+            new Order { Id = Guid.NewGuid(), Name = "Order 2", Description = "Description 2", OrderDate = new DateTime(2026, 9, 2) }
         };        
         fakeAppContext.Orders.AddRange(expectedOrders);
         await fakeAppContext.SaveChangesAsync();

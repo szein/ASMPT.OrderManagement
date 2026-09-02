@@ -33,7 +33,28 @@ public class ComponentRepositoryTests
         var result = await componentRepository.GetAllAsync();
 
         Assert.NotNull(result);
-        Assert.IsType<List<Board>>(result);
+        Assert.IsType<List<Component>>(result);
         Assert.Equal(expectedComponents.Count, result.Count);
+    }
+
+    [Fact]
+    public async Task GetAvailableQuantityAsync_Returns_Correct_Quantity()
+    {
+        // Arrange
+        using var fakeAppContext = _dbContextFactory.CreateFakeDbContext();
+        var fakeLogger = A.Fake<ILogger<ComponentRepository>>();
+        var componentTypeId = 1;
+        var expectedQuantity = 50;
+
+        fakeAppContext.Components.Add(new Component { Id = 1, ComponentTypeId = componentTypeId, Quantity = expectedQuantity });
+        await fakeAppContext.SaveChangesAsync();
+
+        var componentRepository = new ComponentRepository(fakeAppContext, fakeLogger);
+
+        // Act
+        var result = await componentRepository.GetAvailableQuantityAsync(componentTypeId);
+
+        // Assert
+        Assert.Equal(expectedQuantity, result);
     }
 }

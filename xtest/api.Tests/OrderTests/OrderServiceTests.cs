@@ -13,8 +13,8 @@ public class OrderServiceTests
         var fakeRepository = A.Fake<IOrderRepository>();
         var expectedOrders = new List<Order>
         {
-            new Order { Id = 1, Name = "Order 1", Description = "Description 1", OrderDate = new DateTime(2026, 9, 1) },
-            new Order { Id = 2, Name = "Order 2", Description = "Description 2", OrderDate = new DateTime(2026, 9, 2) }
+            new Order { Id = Guid.NewGuid(), Name = "Order 1", Description = "Description 1", OrderDate = new DateTime(2026, 9, 1) },
+            new Order { Id = Guid.NewGuid(), Name = "Order 2", Description = "Description 2", OrderDate = new DateTime(2026, 9, 2) }
         };
         A.CallTo(() => fakeRepository.GetAllAsync()).Returns(Task.FromResult(expectedOrders));
         var orderService = new OrderService(fakeRepository, fakeLogger);
@@ -40,20 +40,20 @@ public class OrderServiceTests
         var fakeRepository = A.Fake<IOrderRepository>();
         var expectedOrder = new Order
         {
-            Id = 1,
+            Id = Guid.NewGuid(),
             Name = "Order 1",
             Description = "Description 1",
             OrderDate = new DateTime(2026, 9, 1)
         };
 
-        A.CallTo(() => fakeRepository.GetByIdAsync(1)).Returns(Task.FromResult<Order?>(expectedOrder));
-        A.CallTo(() => fakeRepository.UpdateBoardAssignmentsAsync(1, A<IEnumerable<int>>.That.Matches(ids => ids.SequenceEqual(new[] { 10, 20 }))))
+        A.CallTo(() => fakeRepository.GetByIdAsync(expectedOrder.Id)).Returns(Task.FromResult<Order?>(expectedOrder));
+        A.CallTo(() => fakeRepository.UpdateBoardAssignmentsAsync(expectedOrder.Id, A<IEnumerable<int>>.That.Matches(ids => ids.SequenceEqual(new[] { 10, 20 }))))
             .Returns(Task.FromResult<Order?>(expectedOrder));
 
         var orderService = new OrderService(fakeRepository, fakeLogger);
 
         // Act
-        var result = await orderService.UpdateBoardAssignmentsAsync(1, new[] { 10, 20 });
+        var result = await orderService.UpdateBoardAssignmentsAsync(expectedOrder.Id, new[] { 10, 20 });
 
         // Assert
         Assert.NotNull(result);
