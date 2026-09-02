@@ -1,0 +1,39 @@
+﻿@using Radzen;
+
+<HeadContent>
+    <RadzenTheme Theme="material" />
+</HeadContent>
+
+<RadzenLayout>
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+            <RadzenSidebarToggle Click="@(() => leftSidebarExpanded = !leftSidebarExpanded)" />
+            <RadzenLabel Text="Header" />
+        </RadzenStack>
+    </RadzenHeader>
+    <RadzenSidebar Position="SidebarPosition.Left" @bind-Expanded="@leftSidebarExpanded" Style="width: 200px;">
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Home" Path="home" Icon="home" />
+            <RadzenPanelMenuItem Text="Orders" Path="orders" Icon="receipt_long" />
+            <RadzenPanelMenuItem Text="Boards" Path="boards" Icon="developer_board" />
+            <RadzenPanelMenuItem Text="Components" Path="components" Icon="memory" />
+        </RadzenPanelMenu>
+    </RadzenSidebar>
+    <RadzenBody>
+        <div class="rz-p-4">
+            @Body
+        </div>
+    </RadzenBody>
+    <RadzenSidebar Position="SidebarPosition.Right" Expanded="false" Style="width: 300px;" Responsive="false"/>
+    @* @bind-Expanded="@rightSidebarExpanded" *@
+</RadzenLayout>
+
+<RadzenComponents />
+
+@code {
+    bool leftSidebarExpanded = true;
+    bool rightSidebarExpanded = false;
+
+    [Parameter]
+    public RenderFragment? Body { get; set; }
+}

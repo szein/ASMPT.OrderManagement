@@ -1,0 +1,29 @@
+﻿@page "/orders/{Id:int}"
+@using Radzen.Blazor
+@using core.Models
+
+<RadzenRow Gap="1rem">
+    <!-- Left Column: Master List / Context Summary -->
+    <RadzenColumn Size="12" SizeMD="4">
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.H6">Orders Overview</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body2">Selected Order ID: @Id</RadzenText>
+        </RadzenCard>
+    </RadzenColumn>
+
+    <!-- Right Column: Detail View Context -->
+    <RadzenColumn Size="12" SizeMD="8">
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.H5">Order Details</RadzenText>
+            <RadzenStack Gap="0.5rem" class="rz-mt-4">
+                <RadzenText TextStyle="TextStyle.Body1"><strong>ID:</strong> @Id</RadzenText>
+                <!-- DTO bound property text placeholders go here -->
+            </RadzenStack>
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+}
