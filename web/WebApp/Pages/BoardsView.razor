@@ -1,6 +1,201 @@
 @page "/boards"
+@using core.Models
+@inject HttpClient http
+@inject DialogService DialogService
+@inject NotificationService NotificationService
 
 <RadzenStack Gap="1rem">
     <RadzenText TextStyle="TextStyle.H4">Boards</RadzenText>
-    <RadzenText TextStyle="TextStyle.Body1">Boards overview</RadzenText>
+
+    <RadzenDataGrid @ref="boardsGrid" Data="@boards" TItem="Board" EditMode="@editMode"
+                    AllowFiltering="true" AllowPaging="true" AllowSorting="true" PageSize="10"
+                    RowUpdate="@OnUpdateRow" ColumnWidth="200px">
+        <HeaderTemplate>
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle" Text="Add New Board" Click="@OpenAddDialog" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(Board.Name)" Title="Name">
+                <EditTemplate Context="board">
+                    <RadzenTextBox @bind-Value="board.Name" Name="Name" Style="width:100%" />
+                    <RadzenRequiredValidator Component="Name" Text="Name is required" Popup="true" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Property="@nameof(Board.Description)" Title="Description">
+                <EditTemplate Context="board">
+                    <RadzenTextBox @bind-Value="board.Description" Name="Description" Style="width:100%" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Property="@nameof(Board.Length)" Title="Length">
+                <EditTemplate Context="board">
+                    <RadzenText Text="@board.Length.ToString()" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Property="@nameof(Board.Width)" Title="Width">
+                <EditTemplate Context="board">
+                    <RadzenText Text="@board.Width.ToString()" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Context="board" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+                <Template Context="board">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(() => EditRow(board))" aria-label="Edit board" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(() => DeleteRow(board))" aria-label="Delete board" />
+                </Template>
+                <EditTemplate Context="board">
+                    <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(() => SaveRow(board))" aria-label="Save board" />
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(() => CancelEdit(board))" aria-label="Cancel edit" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(() => DeleteRow(board))" aria-label="Delete board" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
 </RadzenStack>
+
+@code {
+    private RadzenDataGrid<Board> boardsGrid;
+    private IList<Board> boards = [];
+    private Board editSnapshot;
+    private DataGridEditMode editMode = DataGridEditMode.Single;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            boards = await http.GetFromJsonAsync<List<Board>>("boards") ?? [];
+        }
+        catch (Exception exception)
+        {
+            ShowError($"Could not load boards: {exception.Message}");
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        await CancelCurrentEdit();
+        var result = await DialogService.OpenAsync<AddBoardDialog>("Add New Board", null, new DialogOptions
+        {
+            Width = "500px",
+            Resizable = false,
+            Draggable = true,
+            CloseDialogOnOverlayClick = false
+        });
+
+        if (result is Board)
+        {
+            boards = await http.GetFromJsonAsync<List<Board>>("boards") ?? [];
+            await boardsGrid.Reload();
+        }
+    }
+
+    private async Task EditRow(Board board)
+    {
+        if (boardsGrid is null || !boardsGrid.IsValid)
+        {
+            return;
+        }
+
+        await CancelCurrentEdit();
+        editSnapshot = new Board
+        {
+            Id = board.Id,
+            Name = board.Name,
+            Description = board.Description,
+            Length = board.Length,
+            Width = board.Width
+        };
+        await boardsGrid.EditRow(board);
+    }
+
+    private async Task SaveRow(Board board)
+    {
+        if (boardsGrid is not null)
+        {
+            await boardsGrid.UpdateRow(board);
+        }
+    }
+
+    private async Task OnUpdateRow(Board board)
+    {
+        try
+        {
+            var response = await http.PutAsJsonAsync($"boards/{board.Id}", new
+            {
+                board.Name,
+                board.Description,
+                board.Length,
+                board.Width
+            });
+            response.EnsureSuccessStatusCode();
+            editSnapshot = null;
+        }
+        catch (Exception exception)
+        {
+            ShowError($"Could not update board: {exception.Message}");
+            await CancelEdit(board);
+        }
+    }
+
+    private async Task DeleteRow(Board board)
+    {
+        var confirmed = await DialogService.Confirm($"Delete board '{board.Name}'?", "Delete board", new ConfirmOptions
+        {
+            OkButtonText = "Delete",
+            CancelButtonText = "Cancel"
+        });
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var response = await http.DeleteAsync($"boards/{board.Id}");
+            response.EnsureSuccessStatusCode();
+
+            boards.Remove(board);
+            editSnapshot = null;
+            if (boardsGrid is not null)
+            {
+                await boardsGrid.Reload();
+            }
+        }
+        catch (Exception exception)
+        {
+            ShowError($"Could not delete board: {exception.Message}");
+        }
+    }
+
+    private async Task CancelEdit(Board board)
+    {
+        if (editSnapshot is not null && editSnapshot.Id == board.Id)
+        {
+            board.Name = editSnapshot.Name;
+            board.Description = editSnapshot.Description;
+            board.Length = editSnapshot.Length;
+            board.Width = editSnapshot.Width;
+        }
+
+        editSnapshot = null;
+        boardsGrid?.CancelEditRow(board);
+        if (boardsGrid is not null)
+        {
+            await boardsGrid.Reload();
+        }
+    }
+
+    private async Task CancelCurrentEdit()
+    {
+        if (editSnapshot is not null)
+        {
+            await CancelEdit(editSnapshot);
+        }
+    }
+
+    private void ShowError(string message)
+    {
+        NotificationService.Notify(NotificationSeverity.Error, "Boards", message);
+    }
+}

@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace core.Models;
 
 public class Component : Auditable
@@ -9,7 +7,6 @@ public class Component : Auditable
     public int Quantity { get; set; } //TODO: convert to uint since quantity cannot be negative.
 
     public ComponentStatus Status { get => Quantity > 0 ? ComponentStatus.Available : ComponentStatus.OutOfStock; }
-    [JsonIgnore]
     public ComponentType ComponentType { get; set; } = null!;
     public ICollection<BoardComponent> BoardComponents { get; set; } = new List<BoardComponent>();
 

@@ -1,6 +1,119 @@
 @page "/components"
+@using core.Models
+@inject HttpClient http
+@inject DialogService DialogService
+@inject NotificationService NotificationService
 
 <RadzenStack Gap="1rem">
     <RadzenText TextStyle="TextStyle.H4">Components</RadzenText>
-    <RadzenText TextStyle="TextStyle.Body1">Components overview</RadzenText>
+
+    <RadzenDataGrid @ref="componentsGrid" Data="@components" TItem="Component"
+                    AllowFiltering="true" AllowPaging="true" AllowSorting="true" PageSize="10" ColumnWidth="180px">
+        <HeaderTemplate>
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle" Text="Add New Component" Click="@OpenAddDialog" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(Component.Id)" Title="Id" />
+            <RadzenDataGridColumn Property="ComponentType.Name" Title="Component Type" />
+            <RadzenDataGridColumn Property="@nameof(Component.Quantity)" Title="Quantity" />
+            <RadzenDataGridColumn Property="@nameof(Component.Status)" Title="Status" />
+            <RadzenDataGridColumn Context="component" Filterable="false" Sortable="false" TextAlign="TextAlign.Right">
+                <Template Context="component">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Click="@(() => OpenEditDialog(component))" aria-label="Edit component" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Click="@(() => DeleteComponent(component))" aria-label="Delete component" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
 </RadzenStack>
+
+@code {
+    private RadzenDataGrid<Component> componentsGrid;
+    private IList<Component> components = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComponents();
+    }
+
+    private async Task LoadComponents()
+    {
+        try
+        {
+            components = await http.GetFromJsonAsync<List<Component>>("components") ?? [];
+        }
+        catch (Exception exception)
+        {
+            ShowError($"Could not load components: {exception.Message}");
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var result = await DialogService.OpenAsync<ComponentDialog>("Add New Component", null, new DialogOptions
+        {
+            Width = "500px",
+            Resizable = false,
+            Draggable = true,
+            CloseDialogOnOverlayClick = false
+        });
+
+        if (result is Component)
+        {
+            await LoadComponents();
+            await componentsGrid!.Reload();
+        }
+    }
+
+    private async Task OpenEditDialog(Component component)
+    {
+        var result = await DialogService.OpenAsync<ComponentDialog>("Edit Component", new Dictionary<string, object>
+        {
+            [nameof(ComponentDialog.Component)] = component,
+            [nameof(ComponentDialog.CanEditQuantity)] = true
+        }, new DialogOptions
+        {
+            Width = "500px",
+            Resizable = false,
+            Draggable = true,
+            CloseDialogOnOverlayClick = false
+        });
+
+        if (result is Component)
+        {
+            await LoadComponents();
+            await componentsGrid!.Reload();
+        }
+    }
+
+    private async Task DeleteComponent(Component component)
+    {
+        var confirmed = await DialogService.Confirm($"Delete component '{component.ComponentType.Name}'?", "Delete component", new ConfirmOptions
+        {
+            OkButtonText = "Delete",
+            CancelButtonText = "Cancel"
+        });
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var response = await http.DeleteAsync($"components/{component.Id}");
+            response.EnsureSuccessStatusCode();
+            components.Remove(component);
+            await componentsGrid!.Reload();
+        }
+        catch (Exception exception)
+        {
+            ShowError($"Could not delete component: {exception.Message}");
+        }
+    }
+
+    private void ShowError(string message)
+    {
+        NotificationService.Notify(NotificationSeverity.Error, "Components", message);
+    }
+}

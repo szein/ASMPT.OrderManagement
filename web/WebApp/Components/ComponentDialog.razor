@@ -1,0 +1,82 @@
+@using core.Models
+@inject HttpClient http
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenTemplateForm TItem="ComponentForm" Data="form" Submit="@Save">
+    <RadzenStack Gap="1rem">
+        <RadzenDropDown TValue="int" @bind-Value="form.ComponentTypeId" Data="componentTypes"
+                        TextProperty="Name" ValueProperty="Id" Name="ComponentType"
+                        Placeholder="Component type" Style="width:100%" />
+        <RadzenRequiredValidator Component="ComponentType" Text="Component type is required" Popup="true" />
+
+        <RadzenNumeric TValue="int" @bind-Value="form.Quantity" Name="Quantity"
+                       Disabled="@(!CanEditQuantity)" Min="1" Placeholder="Quantity" Style="width:100%" />
+        <RadzenNumericRangeValidator Component="Quantity" Min="1" Text="Quantity must be greater than zero" Popup="true" />
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+            <RadzenButton Text="Cancel" Icon="close" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+            <RadzenButton Text="Save" Icon="save" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenTemplateForm>
+
+@code {
+    [Parameter] public Component Component { get; set; } = null!;
+    [Parameter] public bool CanEditQuantity { get; set; } = true;
+
+    private ComponentForm form = new();
+    private List<ComponentType> componentTypes = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        componentTypes = await http.GetFromJsonAsync<List<ComponentType>>("componenttypes") ?? [];
+
+        if (Component is not null)
+        {
+            form = new ComponentForm
+            {
+                ComponentTypeId = Component.ComponentTypeId,
+                Quantity = Component.Quantity
+            };
+        }
+    }
+
+    private async Task Save(ComponentForm value)
+    {
+        try
+        {
+            var quantity = CanEditQuantity ? form.Quantity : Component?.Quantity ?? form.Quantity;
+            var payload = new { form.ComponentTypeId, Quantity = quantity };
+            HttpResponseMessage response;
+
+            if (Component is null)
+            {
+                response = await http.PostAsJsonAsync("components", payload);
+            }
+            else
+            {
+                response = await http.PutAsJsonAsync($"components/{Component.Id}", payload);
+            }
+
+            response.EnsureSuccessStatusCode();
+            var savedComponent = await response.Content.ReadFromJsonAsync<Component>();
+            DialogService.Close(savedComponent);
+        }
+        catch (Exception exception)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Components", $"Could not save component: {exception.Message}");
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close();
+    }
+
+    private sealed class ComponentForm
+    {
+        public int ComponentTypeId { get; set; }
+        public int Quantity { get; set; }
+    }
+}
