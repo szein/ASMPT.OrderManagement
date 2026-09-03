@@ -12,11 +12,13 @@
         </RadzenStack>
     </RadzenHeader>
     <RadzenSidebar Position="SidebarPosition.Left" @bind-Expanded="@leftSidebarExpanded" Style="width: 200px;">
-        <RadzenPanelMenu>
+        <RadzenPanelMenu class="sidebar-panel-menu">
             <RadzenPanelMenuItem Text="Home" Path="home" Icon="home" />
             <RadzenPanelMenuItem Text="Orders" Path="orders" Icon="receipt_long" />
-            <RadzenPanelMenuItem Text="Boards" Path="boards" Icon="developer_board" />
-            <RadzenPanelMenuItem Text="Components" Path="components" Icon="memory" />
+            <RadzenPanelMenuItem Text="Management" Icon="settings" class="management-menu-item">
+                <RadzenPanelMenuItem Text="Boards" Path="boards" Icon="developer_board" />
+                <RadzenPanelMenuItem Text="Components" Path="components" Icon="memory" />
+            </RadzenPanelMenuItem>
         </RadzenPanelMenu>
     </RadzenSidebar>
     <RadzenBody>
