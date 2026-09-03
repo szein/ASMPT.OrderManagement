@@ -9,8 +9,21 @@ public class Order : Auditable
     public OrderStatus Status { get; set; }
 
     public ICollection<OrderBoard> OrderBoards { get; set; } = new List<OrderBoard>();
+    public ICollection<OrderComponent> OrderComponents { get; set; } = new List<OrderComponent>();
 }
 
+public class OrderComponent
+{
+    public Guid OrderId { get; set; }
+    public Order Order { get; set; } = null!;
+
+    public int ComponentId { get; set; }
+    public Component Component { get; set; } = null!;
+
+    public int Quantity { get; set; }
+}
+
+public record OrderComponentAssignment(int ComponentId, int Quantity);
 
 public class OrderBoard
 {

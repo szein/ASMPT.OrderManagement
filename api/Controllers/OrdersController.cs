@@ -90,6 +90,10 @@ public class OrdersController : ControllerBase
             _logger.LogWarning(ex, "Validation failed while updating order {OrderId}.", id);
             return BadRequest(ex.Message);
         }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
     }
 
     [HttpPut("{id:guid}/boards")]
@@ -120,13 +124,48 @@ public class OrdersController : ControllerBase
             _logger.LogWarning(ex, "Validation failed while updating board assignments for order {OrderId}.", id);
             return BadRequest(ex.Message);
         }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpPut("{id:guid}/components")]
+    public async Task<ActionResult<Order>> UpdateComponents(Guid id, [FromBody] UpdateOrderComponentsRequest request)
+    {
+        if (request is null)
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            var order = await _orderService.UpdateComponentAssignmentsAsync(id, request.Components);
+            return order is null ? NotFound() : Ok(order);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         _logger.LogInformation("DELETE /api/orders/{OrderId} requested.", id);
-        var deleted = await _orderService.DeleteAsync(id);
+        bool deleted;
+        try
+        {
+            deleted = await _orderService.DeleteAsync(id);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
 
         if (!deleted)
         {
@@ -137,8 +176,27 @@ public class OrdersController : ControllerBase
         _logger.LogInformation("Order {OrderId} deleted successfully.", id);
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/save")]
+    public async Task<ActionResult<Order>> Save(Guid id)
+    {
+        try
+        {
+            var order = await _orderService.SaveAsync(id);
+            return order is null ? NotFound() : Ok(order);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
 }
 
 public record CreateOrderRequest(string Name, string Description, DateTime OrderDate);
 public record UpdateOrderRequest(string Name, string Description, DateTime OrderDate);
 public record UpdateOrderBoardsRequest(List<int> BoardIds);
+public record UpdateOrderComponentsRequest(List<OrderComponentAssignment> Components);

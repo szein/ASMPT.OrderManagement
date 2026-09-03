@@ -7,6 +7,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     // private readonly ICurrentUserService _currentUserService; // Service to get logged-in user
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderBoard> OrderBoards { get; set; }
+    public DbSet<OrderComponent> OrderComponents { get; set; }
     public DbSet<Board> Boards { get; set; }
     public DbSet<BoardComponent> BoardComponents { get; set; }
     public DbSet<Component> Components { get; set; }
@@ -35,12 +36,28 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<OrderBoard>()
             .HasOne(ob => ob.Order)
             .WithMany(o => o.OrderBoards)
-            .HasForeignKey(ob => ob.OrderId);
+            .HasForeignKey(ob => ob.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<OrderBoard>()
             .HasOne(ob => ob.Board)
             .WithMany(b => b.OrderBoards)
             .HasForeignKey(ob => ob.BoardId);
+
+        modelBuilder.Entity<OrderComponent>()
+            .HasKey(oc => new { oc.OrderId, oc.ComponentId });
+
+        modelBuilder.Entity<OrderComponent>()
+            .HasOne(oc => oc.Order)
+            .WithMany(o => o.OrderComponents)
+            .HasForeignKey(oc => oc.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OrderComponent>()
+            .HasOne(oc => oc.Component)
+            .WithMany()
+            .HasForeignKey(oc => oc.ComponentId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<BoardComponent>()
             .HasKey(bc => new { bc.BoardId, bc.ComponentId });

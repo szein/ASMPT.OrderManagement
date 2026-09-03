@@ -142,6 +142,98 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.Id == orderId);
     }
 
+    public async Task<Order?> SaveAsync(Guid orderId)
+    {
+        var order = await _context.Orders
+            .Include(o => o.OrderBoards)
+            .Include(o => o.OrderComponents)
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+
+        if (order is null)
+        {
+            return null;
+        }
+
+        if (order.OrderBoards.Count == 0)
+        {
+            throw new ArgumentException("At least one board is required to save an order.");
+        }
+
+        if (order.OrderComponents.Count == 0)
+        {
+            throw new ArgumentException("At least one component with a quantity greater than zero is required to save an order.");
+        }
+
+        if (order.OrderComponents.Any(assignment => assignment.Quantity <= 0))
+        {
+            throw new ArgumentException("Component quantities must be greater than zero.");
+        }
+
+        var componentIds = order.OrderComponents.Select(assignment => assignment.ComponentId).ToList();
+        var components = await _context.Components
+            .Where(component => componentIds.Contains(component.Id))
+            .OrderBy(component => component.Id)
+            .ToListAsync();
+
+        if (components.Count != order.OrderComponents.Select(assignment => assignment.ComponentId).Distinct().Count())
+        {
+            throw new ArgumentException("One or more components do not exist.");
+        }
+
+        foreach (var assignment in order.OrderComponents)
+        {
+            var component = components.Single(component => component.Id == assignment.ComponentId);
+            if (component.Quantity < assignment.Quantity)
+            {
+                throw new ArgumentException($"Insufficient quantity for component {assignment.ComponentId}.");
+            }
+        }
+
+        foreach (var assignment in order.OrderComponents)
+        {
+            var component = components.Single(component => component.Id == assignment.ComponentId);
+            component.Quantity -= assignment.Quantity;
+        }
+
+        order.Status = OrderStatus.Created;
+        await _context.SaveChangesAsync();
+        return order;
+    }
+
+    public async Task<Order?> UpdateComponentAssignmentsAsync(Guid orderId, IEnumerable<OrderComponentAssignment> assignments)
+    {
+        var requestedAssignments = assignments.ToList();
+        if (requestedAssignments.GroupBy(assignment => assignment.ComponentId).Any(group => group.Count() > 1))
+        {
+            throw new ArgumentException("Duplicate component IDs were supplied.", nameof(assignments));
+        }
+
+        var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+        if (order is null)
+        {
+            return null;
+        }
+
+        var componentIds = requestedAssignments.Select(assignment => assignment.ComponentId).ToList();
+        if (await _context.Components.CountAsync(component => componentIds.Contains(component.Id)) != componentIds.Count)
+        {
+            throw new ArgumentException("One or more components do not exist.", nameof(assignments));
+        }
+
+        var existingAssignments = await _context.OrderComponents
+            .Where(assignment => assignment.OrderId == orderId)
+            .ToListAsync();
+        _context.OrderComponents.RemoveRange(existingAssignments);
+        await _context.OrderComponents.AddRangeAsync(requestedAssignments.Select(assignment => new OrderComponent
+        {
+            OrderId = orderId,
+            ComponentId = assignment.ComponentId,
+            Quantity = assignment.Quantity
+        }));
+        await _context.SaveChangesAsync();
+        return order;
+    }
+
     public async Task<bool> DeleteAsync(Guid id)
     {
         _logger.LogInformation("Attempting to delete order {OrderId}.", id);
@@ -151,6 +243,11 @@ public class OrderRepository : IOrderRepository
         {
             _logger.LogWarning("Delete requested for order {OrderId}, but it was not found.", id);
             return false;
+        }
+
+        if (order.Status != OrderStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending orders can be deleted.");
         }
 
         _context.Orders.Remove(order);
