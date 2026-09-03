@@ -65,10 +65,79 @@ public class ComponentRepository : IComponentRepository
             return false;
         }
 
+        var isInOrder = await _context.BoardComponents
+            .Where(bc => bc.ComponentId == id)
+            .Join(_context.OrderBoards, bc => bc.BoardId, ob => ob.BoardId, (bc, ob) => ob)
+            .AnyAsync();
+
+        if (isInOrder)
+        {
+            component.Status = ComponentStatus.Abandoned;
+            component.Quantity = 0;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        var componentTypeId = component.ComponentTypeId;
+        var assignments = await _context.BoardComponents
+            .Where(bc => bc.ComponentId == id)
+            .ToListAsync();
+        _context.BoardComponents.RemoveRange(assignments);
         _context.Components.Remove(component);
+
+        var hasOtherComponents = await _context.Components
+            .AnyAsync(c => c.ComponentTypeId == componentTypeId && c.Id != id);
+        if (!hasOtherComponents)
+        {
+            var componentType = await _context.ComponentTypes.FirstOrDefaultAsync(ct => ct.Id == componentTypeId);
+            if (componentType is not null)
+            {
+                _context.ComponentTypes.Remove(componentType);
+            }
+        }
+
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Component {ComponentId} was deleted successfully.", id);
+        return true;
+    }
+
+    public async Task<bool> DeleteTypeAsync(int id)
+    {
+        var componentType = await _context.ComponentTypes.FirstOrDefaultAsync(ct => ct.Id == id);
+        if (componentType is null)
+        {
+            return false;
+        }
+
+        var components = await _context.Components
+            .Where(c => c.ComponentTypeId == id)
+            .ToListAsync();
+        var componentIds = components.Select(c => c.Id).ToList();
+        var isInOrder = await _context.BoardComponents
+            .Where(bc => componentIds.Contains(bc.ComponentId))
+            .Join(_context.OrderBoards, bc => bc.BoardId, ob => ob.BoardId, (bc, ob) => ob)
+            .AnyAsync();
+
+        if (isInOrder)
+        {
+            foreach (var component in components)
+            {
+                component.Status = ComponentStatus.Abandoned;
+                component.Quantity = 0;
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        var assignments = await _context.BoardComponents
+            .Where(bc => componentIds.Contains(bc.ComponentId))
+            .ToListAsync();
+        _context.BoardComponents.RemoveRange(assignments);
+        _context.Components.RemoveRange(components);
+        _context.ComponentTypes.Remove(componentType);
+        await _context.SaveChangesAsync();
         return true;
     }
 

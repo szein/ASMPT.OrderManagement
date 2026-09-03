@@ -2,11 +2,16 @@ using core.Models;
 public class ComponentTypeService : IComponentTypeService
 {
     private readonly IComponentTypeRepository _componentTypeRepository;
+    private readonly IComponentRepository _componentRepository;
     private readonly ILogger<ComponentTypeService> _logger;
 
-    public ComponentTypeService(IComponentTypeRepository componentTypeRepository, ILogger<ComponentTypeService> logger)
+    public ComponentTypeService(
+        IComponentTypeRepository componentTypeRepository,
+        IComponentRepository componentRepository,
+        ILogger<ComponentTypeService> logger)
     {
         _componentTypeRepository = componentTypeRepository;
+        _componentRepository = componentRepository;
         _logger = logger;
     }
 
@@ -63,7 +68,7 @@ public class ComponentTypeService : IComponentTypeService
     public async Task<bool> DeleteAsync(int id)
     {
         _logger.LogInformation("Delete request received for component type {ComponentTypeId}.", id);
-        var deleted = await _componentTypeRepository.DeleteAsync(id);
+        var deleted = await _componentRepository.DeleteTypeAsync(id);
 
         if (!deleted)
         {

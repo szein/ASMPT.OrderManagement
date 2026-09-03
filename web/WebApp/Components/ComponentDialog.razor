@@ -30,7 +30,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        componentTypes = await http.GetFromJsonAsync<List<ComponentType>>("componenttypes") ?? [];
+        componentTypes = await http.GetFromJsonAsync<List<ComponentType>>("components/types") ?? [];
 
         if (Component is not null)
         {

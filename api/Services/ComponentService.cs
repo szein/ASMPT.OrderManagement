@@ -33,11 +33,17 @@ public class ComponentService : IComponentService
         _logger.LogInformation("Creating a new component for type {ComponentTypeName}.", componentTypeId);
 
         ValidateComponent(componentTypeId, quantity);
+        var componentType = await _componentTypeRepository.GetByIdAsync(componentTypeId);
+        if (componentType is null)
+        {
+            throw new ArgumentException("Component type was not found.", nameof(componentTypeId));
+        }
 
         var component = new Component
         {
             ComponentTypeId = componentTypeId,
-            Quantity = quantity
+            Quantity = quantity,
+            ComponentType = componentType
         };
 
         var createdComponent = await _componentRepository.AddAsync(component);

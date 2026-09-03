@@ -6,12 +6,64 @@ using core.Models;
 public class ComponentsController : ControllerBase
 {
     private readonly IComponentService _componentService;
+    private readonly IComponentTypeService _componentTypeService;
     private readonly ILogger<ComponentsController> _logger;
 
-    public ComponentsController(IComponentService componentService, ILogger<ComponentsController> logger)
+    public ComponentsController(
+        IComponentService componentService,
+        IComponentTypeService componentTypeService,
+        ILogger<ComponentsController> logger)
     {
         _componentService = componentService;
+        _componentTypeService = componentTypeService;
         _logger = logger;
+    }
+
+    [HttpGet("types")]
+    public async Task<ActionResult<List<ComponentType>>> GetAllTypes() => Ok(await _componentTypeService.GetAllAsync());
+
+    [HttpGet("types/{id:int}")]
+    public async Task<ActionResult<ComponentType>> GetTypeById(int id)
+    {
+        var componentType = await _componentTypeService.GetByIdAsync(id);
+        return componentType is null ? NotFound() : Ok(componentType);
+    }
+
+    [HttpPost("types")]
+    public async Task<ActionResult<ComponentType>> CreateType([FromBody] CreateComponentTypeRequest request)
+    {
+        if (request is null) return BadRequest();
+        try
+        {
+            var componentType = await _componentTypeService.CreateAsync(request.Name, request.Description);
+            return CreatedAtAction(nameof(GetTypeById), new { id = componentType.Id }, componentType);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPut("types/{id:int}")]
+    public async Task<ActionResult<ComponentType>> UpdateType(int id, [FromBody] UpdateComponentTypeRequest request)
+    {
+        if (request is null) return BadRequest();
+        try
+        {
+            var componentType = await _componentTypeService.UpdateAsync(id, request.Name, request.Description);
+            return componentType is null ? NotFound() : Ok(componentType);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpDelete("types/{id:int}")]
+    public async Task<IActionResult> DeleteType(int id)
+    {
+        var deleted = await _componentTypeService.DeleteAsync(id);
+        return deleted ? NoContent() : NotFound();
     }
 
     [HttpGet]
@@ -111,3 +163,5 @@ public class ComponentsController : ControllerBase
 
 public record CreateComponentRequest(int ComponentTypeId, int Quantity);
 public record UpdateComponentRequest(int ComponentTypeId, int Quantity);
+public record CreateComponentTypeRequest(string Name, string Description);
+public record UpdateComponentTypeRequest(string Name, string Description);
