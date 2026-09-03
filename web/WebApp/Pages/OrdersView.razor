@@ -1,6 +1,7 @@
 @page "/orders"
 @using core.Models;
 @inject HttpClient http;
+@inject DialogService DialogService;
 
 <style>
     .rz-grid-table {
@@ -9,6 +10,18 @@
     }
     .rz-datagrid {
         overflow: hidden !important;
+    }
+
+    .component-selection {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    }
+
+    @@media (max-width: 768px) {
+        .component-selection {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
@@ -24,7 +37,7 @@ RowSelect="@OnOrderSelected"
 EditMode="@editMode"
 Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" Sort="@Reset" Page="@Reset" Filter="@Reset" ColumnWidth="200px">
     <HeaderTemplate>
-        <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle" Text="Add New Order" Click="@InsertRow" Disabled="@(editMode == DataGridEditMode.Single && ordersToInsert.Count() > 0)" />
+        <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle" Text="Add New Order" Click="@OpenOrderWizard" />
     </HeaderTemplate>
     <Columns>
         
@@ -82,7 +95,6 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
 
     List<Order> ordersToInsert = new List<Order>();
     List<Order> ordersToUpdate = new List<Order>();
-
     void Reset()
     {
         ordersToInsert.Clear();
@@ -111,6 +123,17 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
             };
         }   
         
+    }
+
+    async Task OpenOrderWizard()
+    {
+        await DialogService.OpenAsync<OrderWizard>("Add New Order", new Dictionary<string, object>(), new DialogOptions
+        {
+            Width = "900px",
+            Resizable = true,
+            Draggable = true,
+            CloseDialogOnOverlayClick = false
+        });
     }
 
     async Task EditRow(Order order)
@@ -209,4 +232,5 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
         OrderStatus.Created   => BadgeStyle.Info,    // Blue
         _           => BadgeStyle.Primary  // Default blue
     };
+
 }

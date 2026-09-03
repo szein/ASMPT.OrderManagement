@@ -1,0 +1,107 @@
+@using core.Models
+@using Radzen.Blazor
+@inject DialogService DialogService
+
+<RadzenSteps ShowStepsButtons="false" @bind-SelectedIndex="wizardStep">
+    <Steps>
+        <RadzenStepsItem Text="Order details">
+            <RadzenTemplateForm TItem="Order" Data="newOrder">
+                <RadzenStack Gap="1rem">
+                    <RadzenTextBox @bind-Value="newOrder.Name" Name="OrderName" Placeholder="Order name" Style="width:100%" />
+                    <RadzenTextArea @bind-Value="newOrder.Description" Name="OrderDescription" Placeholder="Description" Style="width:100%" />
+                    <RadzenDatePicker @bind-Value="newOrder.OrderDate" Name="OrderDate" ReadOnly="true" Style="width:100%" />
+                </RadzenStack>
+            </RadzenTemplateForm>
+        </RadzenStepsItem>
+        <RadzenStepsItem Text="Boards">
+            <RadzenStack Gap="0.5rem">
+                <ItemSelector TItem="Board" TKey="int"
+                              Items="boards"
+                              @bind-SelectedItems="selectedBoards"
+                              ItemKeySelector="board => board.Id"
+                              ItemText="board => board.Name"
+                              TextProperty="Name"
+                              ValueProperty="Id"
+                              Placeholder="Select a board" />
+            </RadzenStack>
+        </RadzenStepsItem>
+        <RadzenStepsItem Text="Components">
+            <ItemSelector TItem="OrderComponentOption" TKey="int"
+                          Items="componentOptions"
+                          @bind-SelectedItems="selectedComponents"
+                          ItemKeySelector="component => component.Id"
+                          ItemText="component => component.ComponentTypeName"
+                          TextProperty="ComponentTypeName"
+                          ValueProperty="Id"
+                          StockSelector="component => component.Status == ComponentStatus.OutOfStock ? 0 : component.Quantity"
+                          CreateSelectedItem="(component, quantity) => component with { Quantity = quantity }"
+                          ShowQuantity="true"
+                          Placeholder="Select a component" />
+        </RadzenStepsItem>
+    </Steps>
+</RadzenSteps>
+
+<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" class="rz-mt-4">
+    <RadzenButton Text="Cancel" Icon="close" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+        @if (wizardStep > 0)
+        {
+            <RadzenButton Text="Back" Icon="arrow_back" ButtonStyle="ButtonStyle.Light" Click="@Back" />
+        }
+        @if (wizardStep < 2)
+        {
+            <RadzenButton Text="Next" Icon="arrow_forward" ButtonStyle="ButtonStyle.Primary" Click="@Next" />
+        }
+        else
+        {
+            <RadzenButton Text="Save draft" Icon="save" ButtonStyle="ButtonStyle.Secondary" Click="@SaveDraft" />
+        }
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    private int wizardStep;
+    private Order newOrder = new() { OrderDate = DateTime.Now, Status = OrderStatus.Pending };
+    private IList<Board> boards = new List<Board>
+    {
+        new Board { Id = 1, Name = "Demo board A" },
+        new Board { Id = 2, Name = "Demo board B" }
+    };
+    private IList<OrderComponentOption> componentOptions = new List<OrderComponentOption>
+    {
+        new OrderComponentOption(1, "Type A", 5, ComponentStatus.Available),
+        new OrderComponentOption(2, "Type B", 10, ComponentStatus.Available),
+        new OrderComponentOption(3, "Type C", 0, ComponentStatus.OutOfStock)
+    };
+
+    private IList<Board> selectedBoards = new List<Board>();
+    private IList<OrderComponentOption> selectedComponents = new List<OrderComponentOption>();
+
+    private void Next()
+    {
+        if (wizardStep < 2)
+        {
+            wizardStep++;
+        }
+    }
+
+    private void Back()
+    {
+        if (wizardStep > 0)
+        {
+            wizardStep--;
+        }
+    }
+
+    private void SaveDraft()
+    {
+        DialogService.Close(newOrder);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close();
+    }
+
+    private record OrderComponentOption(int Id, string ComponentTypeName, int Quantity, ComponentStatus Status);
+}
