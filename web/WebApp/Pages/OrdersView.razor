@@ -23,6 +23,10 @@
             grid-template-columns: 1fr;
         }
     }
+    .wrap-cell {
+        white-space: normal !important;
+        word-break: break-word;
+    }
 </style>
 
 
@@ -32,6 +36,8 @@ AllowFiltering="true"
 AllowPaging="true"
 PageSize="5"
 AllowSorting="true"
+ExpandMode="DataGridExpandMode.Single"
+RowExpand="@LoadBoards"
 SelectionMode="DataGridSelectionMode.Single"
 RowSelect="@OnOrderSelected"
 EditMode="@editMode"
@@ -39,6 +45,28 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
     <HeaderTemplate>
         <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle" Text="Add New Order" Click="@OpenOrderWizard" />
     </HeaderTemplate>
+    <Template Context="order">
+        <RadzenDataGrid Data="@GetBoards(order)" TItem="Board"
+                        AllowPaging="true" PageSize="5" AllowSorting="true"
+                        ExpandMode="DataGridExpandMode.Single"
+                        RowExpand="@LoadComponents" ColumnWidth="200px">
+            <Template Context="board">
+                <RadzenDataGrid Data="@GetComponents(board)" TItem="BoardComponentRow"
+                                AllowPaging="true" PageSize="5" AllowSorting="true" ColumnWidth="200px">
+                    <Columns>
+                        <RadzenDataGridColumn Property="@nameof(BoardComponentRow.ComponentTypeName)" Title="Type" />
+                        <RadzenDataGridColumn Property="@nameof(BoardComponentRow.Quantity)" Title="Quantity" />
+                    </Columns>
+                </RadzenDataGrid>
+            </Template>
+            <Columns>
+                <RadzenDataGridColumn Property="@nameof(Board.Name)" Title="Name" />
+                <RadzenDataGridColumn Property="@nameof(Board.Description)" Title="Description" Width="100px" CssClass="wrap-cell" />
+                <RadzenDataGridColumn Property="@nameof(Board.Length)" Title="Length" />
+                <RadzenDataGridColumn Property="@nameof(Board.Width)" Title="Width" />
+            </Columns>
+        </RadzenDataGrid>
+    </Template>
     <Columns>
         
         @* Name *@
@@ -89,6 +117,8 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
     RadzenDataGrid<Order> ordersGrid;
     IEnumerable<Order> orders;
     Order selectedOrder;
+    private readonly Dictionary<Guid, IList<Board>> boardsByOrder = new();
+    private readonly Dictionary<int, IList<BoardComponentRow>> componentsByBoard = new();
 
 
     DataGridEditMode editMode = DataGridEditMode.Single;
@@ -124,6 +154,30 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
         }   
         
     }
+
+    private IList<Board> GetBoards(Order order) =>
+        boardsByOrder.TryGetValue(order.Id, out var boards) ? boards : [];
+
+    private IList<BoardComponentRow> GetComponents(Board board) =>
+        componentsByBoard.TryGetValue(board.Id, out var components) ? components : [];
+
+    private async Task LoadBoards(Order order)
+    {
+        if (!boardsByOrder.ContainsKey(order.Id))
+        {
+            boardsByOrder[order.Id] = await http.GetFromJsonAsync<List<Board>>($"orders/{order.Id}/boards") ?? [];
+        }
+    }
+
+    private async Task LoadComponents(Board board)
+    {
+        if (!componentsByBoard.ContainsKey(board.Id))
+        {
+            componentsByBoard[board.Id] = await http.GetFromJsonAsync<List<BoardComponentRow>>($"boards/{board.Id}/components") ?? [];
+        }
+    }
+
+    private sealed record BoardComponentRow(int ComponentId, string ComponentTypeName, int Quantity, ComponentStatus Status);
 
     async Task OpenOrderWizard()
     {
