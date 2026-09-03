@@ -10,6 +10,28 @@ public class ComponentServiceTests
     private DbContextFactory _dbContextFactory = new DbContextFactory();    
 
     [Fact]
+    public async Task Update_Component_Quantity()
+    {
+        await using var context = _dbContextFactory.CreateFakeDbContext();
+        context.ComponentTypes.Add(new ComponentType { Id = 1, Name = "Type 1", Description = "Description" });
+        context.Components.Add(new Component { Id = 1, ComponentTypeId = 1, Quantity = 10 });
+        await context.SaveChangesAsync();
+
+        var componentRepository = new ComponentRepository(context, A.Fake<ILogger<ComponentRepository>>());
+        var componentTypeRepository = new ComponentTypeRepository(context, A.Fake<ILogger<ComponentTypeRepository>>());
+        var service = new ComponentService(
+            componentRepository,
+            componentTypeRepository,
+            A.Fake<ILogger<ComponentService>>());
+
+        var updatedComponent = await service.UpdateAsync(1, 1, 20);
+
+        Assert.NotNull(updatedComponent);
+        Assert.Equal(20, updatedComponent.Quantity);
+        Assert.Equal(20, (await context.Components.FindAsync(1))!.Quantity);
+    }
+
+    [Fact]
     public async Task GetAllAsync_Returns_List_Of_Components()
     {
         using var fakeAppContext =  _dbContextFactory.CreateFakeDbContext();

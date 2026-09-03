@@ -47,11 +47,22 @@ public class ComponentRepository : IComponentRepository
     {
         _logger.LogInformation("Updating component {ComponentId}.", component.Id);
 
-        _context.Components.Update(component);
+        var trackedComponent = await _context.Components.FindAsync(component.Id);
+        if (trackedComponent is null)
+        {
+            throw new InvalidOperationException($"Component {component.Id} was not found.");
+        }
+
+        trackedComponent.ComponentTypeId = component.ComponentTypeId;
+        trackedComponent.Quantity = component.Quantity;
+        trackedComponent.Status = component.Status;
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Component {ComponentId} was updated successfully.", component.Id);
-        return component;
+        return await _context.Components
+            .Include(c => c.ComponentType)
+            .AsNoTracking()
+            .SingleAsync(c => c.Id == component.Id);
     }
 
     public async Task<bool> DeleteAsync(int id)
