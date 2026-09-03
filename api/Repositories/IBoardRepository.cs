@@ -1,6 +1,7 @@
 public interface IBoardRepository
 {
     Task<List<Board>> GetAllAsync();
+    Task<List<BoardComponent>> GetComponentsAsync(int boardId);
     Task<Board?> GetByIdAsync(int id);
     Task<Board> AddAsync(Board board);
     Task<Board> UpdateAsync(Board board);

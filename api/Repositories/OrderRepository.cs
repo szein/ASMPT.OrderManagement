@@ -21,6 +21,16 @@ public class OrderRepository : IOrderRepository
             .ToListAsync();
     }
 
+    public async Task<List<Board>> GetBoardsAsync(Guid orderId)
+    {
+        return await _context.OrderBoards
+            .Where(orderBoard => orderBoard.OrderId == orderId)
+            .Select(orderBoard => orderBoard.Board)
+            .AsNoTracking()
+            .OrderBy(board => board.Id)
+            .ToListAsync();
+    }
+
     public async Task<Order?> GetByIdAsync(Guid id)
     {
         _logger.LogInformation("Fetching order with Id {OrderId}.", id);

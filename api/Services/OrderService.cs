@@ -18,6 +18,11 @@ public class OrderService : IOrderService
         return await _orderRepository.GetAllAsync();
     }
 
+    public async Task<List<Board>> GetBoardsAsync(Guid orderId)
+    {
+        return await _orderRepository.GetBoardsAsync(orderId);
+    }
+
     public async Task<Order?> GetByIdAsync(Guid id)
     {
         _logger.LogInformation("Service request received to fetch order {OrderId}.", id);

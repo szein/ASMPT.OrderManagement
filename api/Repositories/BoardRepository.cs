@@ -23,6 +23,17 @@ public class BoardRepository : IBoardRepository
             .ToListAsync();
     }
 
+    public async Task<List<BoardComponent>> GetComponentsAsync(int boardId)
+    {
+        return await _context.BoardComponents
+            .Where(boardComponent => boardComponent.BoardId == boardId)
+            .Include(boardComponent => boardComponent.Component)
+            .ThenInclude(component => component.ComponentType)
+            .AsNoTracking()
+            .OrderBy(boardComponent => boardComponent.ComponentId)
+            .ToListAsync();
+    }
+
     public async Task<Board?> GetByIdAsync(int id)
     {
         _logger.LogInformation("Fetching board with Id {BoardId}.", id);

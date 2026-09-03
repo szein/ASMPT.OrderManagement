@@ -2,6 +2,7 @@ using core.Models;
 public interface IOrderService
 {
     Task<List<Order>> GetAllAsync();
+    Task<List<Board>> GetBoardsAsync(Guid orderId);
     Task<Order?> GetByIdAsync(Guid id);
     Task<Order> CreateAsync(string name, string description, DateTime orderDate);
     Task<Order?> UpdateAsync(Guid id, string name, string description, DateTime orderDate);

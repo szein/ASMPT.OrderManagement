@@ -23,6 +23,13 @@ public class OrdersController : ControllerBase
         return Ok(orders);
     }
 
+    [HttpGet("{id:guid}/boards")]
+    public async Task<ActionResult<List<Board>>> GetBoards(Guid id)
+    {
+        var boards = await _orderService.GetBoardsAsync(id);
+        return Ok(boards);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<Order>> GetById(Guid id)
     {

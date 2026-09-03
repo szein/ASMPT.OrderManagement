@@ -16,6 +16,11 @@ public class BoardService : IBoardService
         return await _boardRepository.GetAllAsync();
     }
 
+    public async Task<List<BoardComponent>> GetComponentsAsync(int boardId)
+    {
+        return await _boardRepository.GetComponentsAsync(boardId);
+    }
+
     public async Task<Board?> GetByIdAsync(int id)
     {
         _logger.LogInformation("Service request received to fetch board {BoardId}.", id);

@@ -23,6 +23,17 @@ public class BoardsController : ControllerBase
         return Ok(boards);
     }
 
+    [HttpGet("{id:int}/components")]
+    public async Task<ActionResult<List<BoardComponentRequest>>> GetComponents(int id)
+    {
+        var components = await _boardService.GetComponentsAsync(id);
+        return Ok(components.Select(boardComponent => new BoardComponentRequest(
+            boardComponent.ComponentId,
+            boardComponent.Component?.ComponentType?.Name ?? string.Empty,
+            boardComponent.BoardComponentQuantity,
+            boardComponent.Component?.Status ?? ComponentStatus.OutOfStock)));
+    }
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Board>> GetById(int id)
     {
@@ -142,3 +153,4 @@ public class BoardsController : ControllerBase
 public record CreateBoardRequest(string Name, string Description, double Length, double Width);
 public record UpdateBoardRequest(string Name, string Description, double Length, double Width);
 public record UpdateBoardComponentsRequest(List<BoardComponentAssignment> Components);
+public record BoardComponentRequest(int ComponentId, string ComponentTypeName, int Quantity, ComponentStatus Status);
