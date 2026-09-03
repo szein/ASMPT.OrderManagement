@@ -16,7 +16,11 @@
             <RadzenDataGridColumn Property="@nameof(Component.Id)" Title="Id" />
             <RadzenDataGridColumn Property="ComponentType.Name" Title="Component Type" />
             <RadzenDataGridColumn Property="@nameof(Component.Quantity)" Title="Quantity" />
-            <RadzenDataGridColumn Property="@nameof(Component.Status)" Title="Status" />
+            <RadzenDataGridColumn Property="@nameof(Component.Status)" Title="Status">
+                <Template Context="component">
+                    <RadzenChip Text="@(component.Status.ToString())" ChipStyle="@GetComponentStatusChipStyle(component.Status)" />
+                </Template>
+            </RadzenDataGridColumn>
             <RadzenDataGridColumn Context="component" Filterable="false" Sortable="false" TextAlign="TextAlign.Right">
                 <Template Context="component">
                     <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Click="@(() => OpenEditDialog(component))" aria-label="Edit component" />
@@ -116,4 +120,12 @@
     {
         NotificationService.Notify(NotificationSeverity.Error, "Components", message);
     }
+
+    private BadgeStyle GetComponentStatusChipStyle(ComponentStatus status) => status switch
+    {
+        ComponentStatus.Available => BadgeStyle.Success,
+        ComponentStatus.OutOfStock => BadgeStyle.Danger,
+        ComponentStatus.Abandoned => BadgeStyle.Dark,
+        _ => BadgeStyle.Secondary
+    };
 }
