@@ -9,5 +9,5 @@ public class ComponentType : Auditable
     public string Description { get; set; } = string.Empty;
 
     [JsonIgnore]
-    public ICollection<Component> Components { get; set; } = new List<Component>();
+    public Component Component { get; set; } = null!;
 }
