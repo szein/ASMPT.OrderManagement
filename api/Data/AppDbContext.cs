@@ -7,70 +7,40 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     // private readonly ICurrentUserService _currentUserService; // Service to get logged-in user
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderBoard> OrderBoards { get; set; }
-    public DbSet<OrderComponent> OrderComponents { get; set; }
+    public DbSet<OrderBoardComponent> OrderBoardComponents { get; set; }
     public DbSet<Board> Boards { get; set; }
-    public DbSet<BoardComponent> BoardComponents { get; set; }
     public DbSet<Component> Components { get; set; }
     public DbSet<ComponentType> ComponentTypes { get; set; }
 
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-        
-    }
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)    {    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Order>().HasKey(o => o.Id);
-
-        modelBuilder.Entity<Board>().HasKey(b => b.Id);
-
-        modelBuilder.Entity<Component>().HasKey(c => c.Id);
-        
-        modelBuilder.Entity<ComponentType>().HasKey(ct => ct.Id);
-
-        modelBuilder.Entity<OrderBoard>()
-            .HasKey(ob => new { ob.OrderId, ob.BoardId });
-
         modelBuilder.Entity<OrderBoard>()
             .HasOne(ob => ob.Order)
             .WithMany(o => o.OrderBoards)
-            .HasForeignKey(ob => ob.OrderId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey(ob => ob.OrderId);
 
-        modelBuilder.Entity<OrderBoard>()
-            .HasOne(ob => ob.Board)
-            .WithMany(b => b.OrderBoards)
-            .HasForeignKey(ob => ob.BoardId);
+        modelBuilder.Entity<OrderBoardComponent>()
+            .HasOne(obc => obc.OrderBoard)
+            .WithMany(ob => ob.OrderBoardComponents)
+            .HasForeignKey(obc => obc.OrderBoardId);
 
-        modelBuilder.Entity<OrderComponent>()
-            .HasKey(oc => new { oc.OrderId, oc.ComponentId });
-
-        modelBuilder.Entity<OrderComponent>()
-            .HasOne(oc => oc.Order)
-            .WithMany(o => o.OrderComponents)
-            .HasForeignKey(oc => oc.OrderId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<OrderComponent>()
-            .HasOne(oc => oc.Component)
+        modelBuilder.Entity<OrderBoardComponent>()
+            .HasOne(obc => obc.Component)
             .WithMany()
-            .HasForeignKey(oc => oc.ComponentId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(obc => obc.ComponentId);
 
-        modelBuilder.Entity<BoardComponent>()
-            .HasKey(bc => new { bc.BoardId, bc.ComponentId });
+        modelBuilder.Entity<OrderBoardComponent>()
+            .HasIndex(obc => new { obc.OrderBoardId, obc.ComponentId })
+            .IsUnique();
 
-        modelBuilder.Entity<BoardComponent>()
-            .HasOne(bc => bc.Board)
-            .WithMany(b => b.BoardComponents)
-            .HasForeignKey(bc => bc.BoardId);
-
-        modelBuilder.Entity<BoardComponent>()
-            .HasOne(bc => bc.Component)
-            .WithMany(c => c.BoardComponents)
-            .HasForeignKey(bc => bc.ComponentId);
+        modelBuilder.Entity<ComponentType>()
+            .HasOne(ct=> ct.Component)
+            .WithOne(ct=> ct.ComponentType)
+            .HasForeignKey<Component>(c=> c.Id);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace api.Migrations
 {
     /// <inheritdoc />
-    public partial class initialAppContext : Migration
+    public partial class intiateDbContext : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -217,10 +217,10 @@ namespace api.Migrations
                 name: "Components",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false),
                     ComponentTypeId = table.Column<int>(type: "INTEGER", nullable: false),
                     Quantity = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true),
@@ -230,8 +230,8 @@ namespace api.Migrations
                 {
                     table.PrimaryKey("PK_Components", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Components_ComponentTypes_ComponentTypeId",
-                        column: x => x.ComponentTypeId,
+                        name: "FK_Components_ComponentTypes_Id",
+                        column: x => x.Id,
                         principalTable: "ComponentTypes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -241,12 +241,13 @@ namespace api.Migrations
                 name: "OrderBoards",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     OrderId = table.Column<Guid>(type: "TEXT", nullable: false),
                     BoardId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrderBoards", x => new { x.OrderId, x.BoardId });
+                    table.PrimaryKey("PK_OrderBoards", x => x.Id);
                     table.ForeignKey(
                         name: "FK_OrderBoards_Boards_BoardId",
                         column: x => x.BoardId,
@@ -262,9 +263,11 @@ namespace api.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "BoardComponents",
+                name: "BoardComponent",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrderId = table.Column<Guid>(type: "TEXT", nullable: false),
                     BoardId = table.Column<int>(type: "INTEGER", nullable: false),
                     ComponentId = table.Column<int>(type: "INTEGER", nullable: false),
                     BoardComponentQuantity = table.Column<int>(type: "INTEGER", nullable: false),
@@ -275,17 +278,50 @@ namespace api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_BoardComponents", x => new { x.BoardId, x.ComponentId });
+                    table.PrimaryKey("PK_BoardComponent", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_BoardComponents_Boards_BoardId",
+                        name: "FK_BoardComponent_Boards_BoardId",
                         column: x => x.BoardId,
                         principalTable: "Boards",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_BoardComponents_Components_ComponentId",
+                        name: "FK_BoardComponent_Components_ComponentId",
                         column: x => x.ComponentId,
                         principalTable: "Components",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BoardComponent_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OrderBoardComponents",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    OrderBoardId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ComponentId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Quantity = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderBoardComponents", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OrderBoardComponents_Components_ComponentId",
+                        column: x => x.ComponentId,
+                        principalTable: "Components",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OrderBoardComponents_OrderBoards_OrderBoardId",
+                        column: x => x.OrderBoardId,
+                        principalTable: "OrderBoards",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -328,19 +364,40 @@ namespace api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_BoardComponents_ComponentId",
-                table: "BoardComponents",
+                name: "IX_BoardComponent_BoardId",
+                table: "BoardComponent",
+                column: "BoardId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BoardComponent_ComponentId",
+                table: "BoardComponent",
                 column: "ComponentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Components_ComponentTypeId",
-                table: "Components",
-                column: "ComponentTypeId");
+                name: "IX_BoardComponent_OrderId",
+                table: "BoardComponent",
+                column: "OrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderBoardComponents_ComponentId",
+                table: "OrderBoardComponents",
+                column: "ComponentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderBoardComponents_OrderBoardId_ComponentId",
+                table: "OrderBoardComponents",
+                columns: new[] { "OrderBoardId", "ComponentId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderBoards_BoardId",
                 table: "OrderBoards",
                 column: "BoardId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderBoards_OrderId",
+                table: "OrderBoards",
+                column: "OrderId");
         }
 
         /// <inheritdoc />
@@ -362,10 +419,10 @@ namespace api.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "BoardComponents");
+                name: "BoardComponent");
 
             migrationBuilder.DropTable(
-                name: "OrderBoards");
+                name: "OrderBoardComponents");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -377,13 +434,16 @@ namespace api.Migrations
                 name: "Components");
 
             migrationBuilder.DropTable(
+                name: "OrderBoards");
+
+            migrationBuilder.DropTable(
+                name: "ComponentTypes");
+
+            migrationBuilder.DropTable(
                 name: "Boards");
 
             migrationBuilder.DropTable(
                 name: "Orders");
-
-            migrationBuilder.DropTable(
-                name: "ComponentTypes");
         }
     }
 }
