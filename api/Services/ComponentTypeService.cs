@@ -31,8 +31,6 @@ public class ComponentTypeService : IComponentTypeService
     {
         _logger.LogInformation("Creating a new component type with name {ComponentTypeName}.", name);
 
-        ValidateComponentType(name, description);
-
         var componentType = new ComponentType
         {
             Name = name.Trim(),
@@ -55,8 +53,6 @@ public class ComponentTypeService : IComponentTypeService
             return null;
         }
 
-        ValidateComponentType(name, description);
-
         existingComponentType.Name = name.Trim();
         existingComponentType.Description = description.Trim();
 
@@ -76,19 +72,5 @@ public class ComponentTypeService : IComponentTypeService
         }
 
         return deleted;
-    }
-    
-
-    private static void ValidateComponentType(string name, string description)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("Component type name is required.", nameof(name));
-        }
-
-        if (description is null)
-        {
-            throw new ArgumentException("Component type description is required.", nameof(description));
-        }
     }
 }

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using core.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
+using SQLitePCL;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -18,35 +20,76 @@ public class BoardsController : ControllerBase
     public async Task<ActionResult<List<Board>>> GetAll()
     {
         _logger.LogInformation("GET /api/boards requested.");
-        var boards = await _boardService.GetAllAsync();
-        _logger.LogInformation("Returning {BoardCount} boards.", boards?.Count);
-        return Ok(boards);
+        try
+        {
+            var boards = await _boardService.GetAllAsync();
+            _logger.LogInformation("Returning {BoardCount} boards.", boards?.Count);
+            return Ok(boards);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception occurred in GetAll");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Status = StatusCodes.Status500InternalServerError,
+                Title = "An unexpected error occurred.",
+                Detail = ex.Message
+            });
+        }
     }
 
     [HttpGet("{id:int}/components")]
     public async Task<ActionResult<List<BoardComponentRequest>>> GetComponents(int id)
     {
-        var components = await _boardService.GetComponentsAsync(id);
-        return Ok(components.Select(boardComponent => new BoardComponentRequest(
-            boardComponent.ComponentId,
-            boardComponent.Component?.ComponentType?.Name ?? string.Empty,
-            boardComponent.BoardComponentQuantity,
-            boardComponent.Component?.Status ?? ComponentStatus.OutOfStock)));
+        try
+        {
+            var components = await _boardService.GetComponentsAsync(id);
+            return Ok(components.Select(boardComponent => new BoardComponentRequest(
+                boardComponent.OrderBoardId,
+                boardComponent.ComponentId,
+                boardComponent.Component?.ComponentType?.Name ?? string.Empty,
+                boardComponent.Quantity,
+                boardComponent.Component?.Status ?? ComponentStatus.OutOfStock)));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception occurred in GetComponent({id})", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Status = StatusCodes.Status500InternalServerError,
+                Title = "An unexpected error occurred. While fetching data.",
+                Detail = ex.Message
+            });
+        }
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Board>> GetById(int id)
     {
         _logger.LogInformation("GET /api/boards/{BoardId} requested.", id);
-        var board = await _boardService.GetByIdAsync(id);
-        if (board is null)
+        try
         {
-            _logger.LogWarning("Board {BoardId} was not found.", id);
-            return NotFound();
-        }
 
-        _logger.LogInformation("Board {BoardId} returned successfully.", id);
-        return Ok(board);
+            var board = await _boardService.GetByIdAsync(id);
+            if (board is null)
+            {
+                _logger.LogWarning("Board {BoardId} was not found.", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Board {BoardId} returned successfully.", id);
+            return Ok(board);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception occurred in GetById({id})", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Status = StatusCodes.Status500InternalServerError,
+                Title = "An unexpected error occurred. While fetching data.",
+                Detail = ex.Message
+            });
+        }
     }
 
     [HttpPost]
@@ -54,10 +97,10 @@ public class BoardsController : ControllerBase
     {
         _logger.LogInformation("POST /api/boards requested for board {BoardName}.", request?.Name ?? "unknown");
 
-        if (request is null)
+        if (request is null || !ModelState.IsValid)
         {
             _logger.LogWarning("Create board failed because the request body was null.");
-            return BadRequest();
+            return BadRequest(ModelState);
         }
 
         try
@@ -66,10 +109,15 @@ public class BoardsController : ControllerBase
             _logger.LogInformation("Board {BoardId} created successfully.", board.Id);
             return CreatedAtAction(nameof(GetById), new { id = board.Id }, board);
         }
-        catch (ArgumentException ex)
+        catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Validation failed while creating a board.");
-            return BadRequest(ex.Message);
+            _logger.LogError(ex, "Unhandled exception occurred in Create)");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Status = StatusCodes.Status500InternalServerError,
+                Title = "An unexpected error occurred while saving Board data!",
+                Detail = ex.Message
+            });
         }
     }
 
@@ -78,10 +126,9 @@ public class BoardsController : ControllerBase
     {
         _logger.LogInformation("PUT /api/boards/{BoardId} requested.", id);
 
-        if (request is null)
+        if (request is null || !ModelState.IsValid)
         {
-            _logger.LogWarning("Update board failed because the request body was null for board {BoardId}.", id);
-            return BadRequest();
+            return BadRequest(ModelState);
         }
 
         try
@@ -96,40 +143,15 @@ public class BoardsController : ControllerBase
             _logger.LogInformation("Board {BoardId} updated successfully.", id);
             return Ok(board);
         }
-        catch (ArgumentException ex)
+        catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Validation failed while updating board {BoardId}.", id);
-            return BadRequest(ex.Message);
-        }
-    }
-
-    [HttpPut("{id:int}/components")]
-    public async Task<ActionResult<Board>> UpdateComponents(int id, [FromBody] UpdateBoardComponentsRequest request)
-    {
-        _logger.LogInformation("PUT /api/boards/{BoardId}/components requested.", id);
-
-        if (request is null)
-        {
-            _logger.LogWarning("Update board components failed because the request body was null for board {BoardId}.", id);
-            return BadRequest();
-        }
-
-        try
-        {
-            var board = await _boardService.UpdateComponentAssignmentsAsync(id, request.Components);
-            if (board is null)
+            _logger.LogError(ex, "Unhandled exception occurred in Update)");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
-                _logger.LogWarning("Board component update failed because board {BoardId} was not found.", id);
-                return NotFound();
-            }
-
-            _logger.LogInformation("Board components for board {BoardId} updated successfully.", id);
-            return Ok(board);
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning(ex, "Validation failed while updating board components for board {BoardId}.", id);
-            return BadRequest(ex.Message);
+                Status = StatusCodes.Status500InternalServerError,
+                Title = "An unexpected error occurred while saving Board data!",
+                Detail = ex.Message
+            });
         }
     }
 
@@ -137,20 +159,28 @@ public class BoardsController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         _logger.LogInformation("DELETE /api/boards/{BoardId} requested.", id);
-        var deleted = await _boardService.DeleteAsync(id);
-
-        if (!deleted)
+        try
         {
-            _logger.LogWarning("Delete failed because board {BoardId} was not found.", id);
-            return NotFound();
-        }
+            var deleted = await _boardService.DeleteAsync(id);
 
-        _logger.LogInformation("Board {BoardId} deleted successfully.", id);
-        return NoContent();
+            if (!deleted)
+            {
+                _logger.LogWarning("Delete failed because board {BoardId} was not found.", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Board {BoardId} deleted successfully.", id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception occurred in Delete");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Status = StatusCodes.Status500InternalServerError,
+                Title = "An unexpected error occurred while deleting data.",
+                Detail = ex.Message
+            });
+        }
     }
 }
-
-public record CreateBoardRequest(string Name, string Description, double Length, double Width);
-public record UpdateBoardRequest(string Name, string Description, double Length, double Width);
-public record UpdateBoardComponentsRequest(List<BoardComponentAssignment> Components);
-public record BoardComponentRequest(int ComponentId, string ComponentTypeName, int Quantity, ComponentStatus Status);

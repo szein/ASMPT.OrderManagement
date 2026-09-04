@@ -28,39 +28,15 @@ public class ComponentService : IComponentService
         return await _componentRepository.GetByIdAsync(id);
     }
 
-    public async Task<Component> CreateAsync(int componentTypeId, int quantity)
+    public async Task<Component> CreateAsync(string name, string description, int quantity)
     {
-        _logger.LogInformation("Creating a new component for type {ComponentTypeName}.", componentTypeId);
+        _logger.LogInformation("Creating a new component for type {ComponentTypeName}.", name);
 
-        ValidateComponent(componentTypeId, quantity);
-        var componentType = await _componentTypeRepository.GetByIdAsync(componentTypeId);
-        if (componentType is null)
+        var componentType = await _componentTypeRepository.AddAsync(new ComponentType
         {
-            throw new ArgumentException("Component type was not found.", nameof(componentTypeId));
-        }
-
-        var component = new Component
-        {
-            ComponentTypeId = componentTypeId,
-            Quantity = quantity,
-            ComponentType = componentType
-        };
-
-        var createdComponent = await _componentRepository.AddAsync(component);
-        _logger.LogInformation("Component creation completed for component {ComponentId}.", createdComponent.Id);
-        return createdComponent;
-    }
-
-    public async Task<Component> CreateAsync(ComponentType componentType, int quantity)
-    {
-        _logger.LogInformation("Creating a new component for type {ComponentTypeName}.", componentType?.Name);
-
-        ValidateComponent(componentType, quantity);
-
-        if (componentType.Id <= 0)
-        {
-            throw new ArgumentException("Component type was not found.", nameof(componentType));
-        }
+            Name = name.Trim(),
+            Description = description.Trim()
+        });
 
         var component = new Component
         {
@@ -74,7 +50,7 @@ public class ComponentService : IComponentService
         return createdComponent;
     }
 
-    public async Task<Component?> UpdateAsync(int id, int componentTypeId, int quantity)
+    public async Task<Component?> UpdateAsync(int id, string name, string description, int quantity)
     {
         _logger.LogInformation("Updating component {ComponentId}.", id);
 
@@ -85,18 +61,11 @@ public class ComponentService : IComponentService
             return null;
         }
 
-        ValidateComponent(componentTypeId, quantity);
-
-        var componentType = await _componentTypeRepository.GetByIdAsync(componentTypeId);
-        if (componentType is null)
-        {
-            throw new ArgumentException("Component type was not found.", nameof(componentTypeId));
-        }
-
-        existingComponent.ComponentTypeId = componentTypeId;
+        existingComponent.ComponentType.Name = name.Trim();
+        existingComponent.ComponentType.Description = description.Trim();
         existingComponent.Quantity = quantity;
-        existingComponent.ComponentType = componentType;
 
+        await _componentTypeRepository.UpdateAsync(existingComponent.ComponentType);
         var updatedComponent = await _componentRepository.UpdateAsync(existingComponent);
         _logger.LogInformation("Component {ComponentId} was successfully updated.", updatedComponent.Id);
         return updatedComponent;
@@ -136,29 +105,4 @@ public class ComponentService : IComponentService
         return deleted;
     }
 
-    private static void ValidateComponent(ComponentType componentType, int quantity)
-    {
-        if (componentType is null)
-        {
-            throw new ArgumentException("Component type is required.", nameof(componentType));
-        }
-
-        if (quantity <= 0)
-        {
-            throw new ArgumentException("Component quantity must be greater than zero.", nameof(quantity));
-        }
-    }
-
-    private static void ValidateComponent(int componentTypeId, int quantity)
-    {
-        if (componentTypeId <= 0)
-        {
-            throw new ArgumentException("Component type is required.", nameof(componentTypeId));
-        }
-
-        if (quantity <= 0)
-        {
-            throw new ArgumentException("Component quantity must be greater than zero.", nameof(quantity));
-        }
-    }
 }

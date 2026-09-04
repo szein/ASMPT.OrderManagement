@@ -18,31 +18,59 @@ public class OrdersController : ControllerBase
     public async Task<ActionResult<List<Order>>> GetAll()
     {
         _logger.LogInformation("GET /api/orders requested.");
-        var orders = await _orderService.GetAllAsync();
-        _logger.LogInformation("Returning {OrderCount} orders.", orders?.Count);
-        return Ok(orders);
+        try
+        {
+            var orders = await _orderService.GetAllAsync();
+            _logger.LogInformation("Returning {OrderCount} orders.", orders?.Count);
+            return Ok(orders);
+        }
+        catch (Exception ex) { return HandleException(ex, "GetAll"); }
     }
 
     [HttpGet("{id:guid}/boards")]
     public async Task<ActionResult<List<Board>>> GetBoards(Guid id)
     {
-        var boards = await _orderService.GetBoardsAsync(id);
-        return Ok(boards);
+        try
+        {
+            var boards = await _orderService.GetBoardsAsync(id);
+            return Ok(boards);
+        }
+        catch (Exception ex) { return HandleException(ex, $"GetBoards({id})"); }
+    }
+
+    [HttpGet("{id:guid}/boards/{boardId:int}/components")]
+    public async Task<ActionResult<List<BoardComponentRequest>>> GetComponents(Guid id, int boardId)
+    {
+        try
+        {
+            var components = await _orderService.GetComponentsAsync(id, boardId);
+            return Ok(components.Select(orderBoardComponent => new BoardComponentRequest(
+                orderBoardComponent.OrderBoardId,
+                orderBoardComponent.ComponentId,
+                orderBoardComponent.Component?.ComponentType?.Name ?? string.Empty,
+                orderBoardComponent.Quantity,
+                orderBoardComponent.Component?.Status ?? ComponentStatus.OutOfStock)));
+        }
+        catch (Exception ex) { return HandleException(ex, $"GetComponents({id}, {boardId})"); }
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<Order>> GetById(Guid id)
     {
         _logger.LogInformation("GET /api/orders/{OrderId} requested.", id);
-        var order = await _orderService.GetByIdAsync(id);
-        if (order is null)
+        try
         {
-            _logger.LogWarning("Order {OrderId} was not found.", id);
-            return NotFound();
-        }
+            var order = await _orderService.GetByIdAsync(id);
+            if (order is null)
+            {
+                _logger.LogWarning("Order {OrderId} was not found.", id);
+                return NotFound();
+            }
 
-        _logger.LogInformation("Order {OrderId} returned successfully.", id);
-        return Ok(order);
+            _logger.LogInformation("Order {OrderId} returned successfully.", id);
+            return Ok(order);
+        }
+        catch (Exception ex) { return HandleException(ex, $"GetById({id})"); }
     }
 
     [HttpPost]
@@ -50,22 +78,21 @@ public class OrdersController : ControllerBase
     {
         _logger.LogInformation("POST /api/orders requested for order {OrderName}.", request?.Name ?? "unknown");
 
-        if (request is null)
+        if (request is null || !ModelState.IsValid)
         {
-            _logger.LogWarning("Create order failed because the request body was null.");
-            return BadRequest();
+            _logger.LogWarning("Create order failed because the request was invalid.");
+            return BadRequest(ModelState);
         }
 
         try
         {
-            var order = await _orderService.CreateAsync(request.Name, request.Description, request.OrderDate);
+            var order = await _orderService.CreateAsync(request);
             _logger.LogInformation("Order {OrderId} created successfully.", order.Id);
             return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
         }
-        catch (ArgumentException ex)
+        catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Validation failed while creating an order.");
-            return BadRequest(ex.Message);
+            return HandleException(ex, "Create");
         }
     }
 
@@ -74,10 +101,10 @@ public class OrdersController : ControllerBase
     {
         _logger.LogInformation("PUT /api/orders/{OrderId} requested.", id);
 
-        if (request is null)
+        if (request is null || !ModelState.IsValid)
         {
-            _logger.LogWarning("Update order failed because the request body was null for order {OrderId}.", id);
-            return BadRequest();
+            _logger.LogWarning("Update order failed because the request was invalid for order {OrderId}.", id);
+            return BadRequest(ModelState);
         }
 
         try
@@ -92,73 +119,17 @@ public class OrdersController : ControllerBase
             _logger.LogInformation("Order {OrderId} updated successfully.", id);
             return Ok(order);
         }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning(ex, "Validation failed while updating order {OrderId}.", id);
-            return BadRequest(ex.Message);
-        }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Order {OrderId} could not be updated because of its current status.", id);
             return Conflict(ex.Message);
         }
-    }
-
-    [HttpPut("{id:guid}/boards")]
-    public async Task<ActionResult<Order>> UpdateBoards(Guid id, [FromBody] UpdateOrderBoardsRequest request)
-    {
-        _logger.LogInformation("PUT /api/orders/{OrderId}/boards requested.", id);
-
-        if (request is null)
+        catch (Exception ex)
         {
-            _logger.LogWarning("Update board assignments failed because the request body was null for order {OrderId}.", id);
-            return BadRequest();
-        }
-
-        try
-        {
-            var order = await _orderService.UpdateBoardAssignmentsAsync(id, request.BoardIds);
-            if (order is null)
-            {
-                _logger.LogWarning("Board assignment update failed because order {OrderId} was not found.", id);
-                return NotFound();
-            }
-
-            _logger.LogInformation("Board assignments for order {OrderId} updated successfully.", id);
-            return Ok(order);
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning(ex, "Validation failed while updating board assignments for order {OrderId}.", id);
-            return BadRequest(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(ex.Message);
+            return HandleException(ex, $"Update({id})");
         }
     }
-
-    [HttpPut("{id:guid}/components")]
-    public async Task<ActionResult<Order>> UpdateComponents(Guid id, [FromBody] UpdateOrderComponentsRequest request)
-    {
-        if (request is null)
-        {
-            return BadRequest();
-        }
-
-        try
-        {
-            var order = await _orderService.UpdateComponentAssignmentsAsync(id, request.Components);
-            return order is null ? NotFound() : Ok(order);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(ex.Message);
-        }
-    }
+   
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
@@ -171,7 +142,12 @@ public class OrdersController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Order {OrderId} could not be deleted because of its current status.", id);
             return Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return HandleException(ex, $"Delete({id})");
         }
 
         if (!deleted)
@@ -184,26 +160,15 @@ public class OrdersController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/save")]
-    public async Task<ActionResult<Order>> Save(Guid id)
+    private ObjectResult HandleException(Exception exception, string operation)
     {
-        try
+        _logger.LogError(exception, "Unhandled exception occurred in {Operation}.", operation);
+        return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
         {
-            var order = await _orderService.SaveAsync(id);
-            return order is null ? NotFound() : Ok(order);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(ex.Message);
-        }
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An unexpected error occurred.",
+            Detail = exception.Message
+        });
     }
 }
 
-public record CreateOrderRequest(string Name, string Description, DateTime OrderDate);
-public record UpdateOrderRequest(string Name, string Description, DateTime OrderDate);
-public record UpdateOrderBoardsRequest(List<int> BoardIds);
-public record UpdateOrderComponentsRequest(List<OrderComponentAssignment> Components);

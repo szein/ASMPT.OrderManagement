@@ -71,7 +71,9 @@ await using (var scope = app.Services.CreateAsyncScope())
 async Task SeedDatabaseAsync(AppDbContext dbContext)
 {
     var order1Id = Guid.NewGuid();
+    var order1BoardId = Guid.NewGuid();
     var order2Id = Guid.NewGuid();
+    var order2BoardId = Guid.NewGuid();
 
     dbContext.Boards.AddRange(
         new Board { Id = 1, Name = "Board 1", Description = "Description for Board 1", Length = 10.5, Width = 8.5 },
@@ -92,14 +94,14 @@ async Task SeedDatabaseAsync(AppDbContext dbContext)
         new Order { Id = order2Id, Name = "Order 2", OrderDate = DateTime.UtcNow }
     );
     dbContext.OrderBoards.AddRange(
-        new OrderBoard { OrderId = order1Id, BoardId = 1 },
-        new OrderBoard { OrderId = order2Id, BoardId = 2 }
+        new OrderBoard { Id = order1BoardId, OrderId = order1Id, BoardId = 1 },
+        new OrderBoard { Id = order2BoardId, OrderId = order2Id, BoardId = 2 }
     );
-    dbContext.BoardComponents.AddRange(
-        new BoardComponent { BoardId = 1, ComponentId = 1 },
-        new BoardComponent { BoardId = 1, ComponentId = 2 },
-        new BoardComponent { BoardId = 2, ComponentId = 2 },
-        new BoardComponent { BoardId = 2, ComponentId = 3 }
+    dbContext.OrderBoardComponents.AddRange(
+        new OrderBoardComponent { OrderBoardId= order1BoardId, ComponentId = 1, Quantity = 2 },
+        new OrderBoardComponent { OrderBoardId= order1BoardId, ComponentId = 2, Quantity = 1 },
+        new OrderBoardComponent { OrderBoardId= order2BoardId, ComponentId = 2 , Quantity = 4},
+        new OrderBoardComponent { OrderBoardId= order2BoardId, ComponentId = 3 , Quantity = 3}
     );
 }
 

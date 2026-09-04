@@ -76,24 +76,23 @@ public class ComponentRepository : IComponentRepository
             return false;
         }
 
-        var isInOrder = await _context.BoardComponents
+        var isInOrder = await _context.OrderBoardComponents
             .Where(bc => bc.ComponentId == id)
-            .Join(_context.OrderBoards, bc => bc.BoardId, ob => ob.BoardId, (bc, ob) => ob)
             .AnyAsync();
 
         if (isInOrder)
         {
             component.Status = ComponentStatus.Abandoned;
-            component.Quantity = 0;
+            //component.Quantity = 0;
             await _context.SaveChangesAsync();
             return true;
         }
 
         var componentTypeId = component.ComponentTypeId;
-        var assignments = await _context.BoardComponents
+        var assignments = await _context.OrderBoardComponents
             .Where(bc => bc.ComponentId == id)
             .ToListAsync();
-        _context.BoardComponents.RemoveRange(assignments);
+        _context.OrderBoardComponents.RemoveRange(assignments);
         _context.Components.Remove(component);
 
         var hasOtherComponents = await _context.Components
@@ -125,9 +124,8 @@ public class ComponentRepository : IComponentRepository
             .Where(c => c.ComponentTypeId == id)
             .ToListAsync();
         var componentIds = components.Select(c => c.Id).ToList();
-        var isInOrder = await _context.BoardComponents
+        var isInOrder = await _context.OrderBoardComponents
             .Where(bc => componentIds.Contains(bc.ComponentId))
-            .Join(_context.OrderBoards, bc => bc.BoardId, ob => ob.BoardId, (bc, ob) => ob)
             .AnyAsync();
 
         if (isInOrder)
@@ -142,10 +140,10 @@ public class ComponentRepository : IComponentRepository
             return true;
         }
 
-        var assignments = await _context.BoardComponents
+        var assignments = await _context.OrderBoardComponents
             .Where(bc => componentIds.Contains(bc.ComponentId))
             .ToListAsync();
-        _context.BoardComponents.RemoveRange(assignments);
+        _context.OrderBoardComponents.RemoveRange(assignments);
         _context.Components.RemoveRange(components);
         _context.ComponentTypes.Remove(componentType);
         await _context.SaveChangesAsync();

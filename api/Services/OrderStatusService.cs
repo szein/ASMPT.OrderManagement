@@ -12,7 +12,7 @@ public class OrderStatusService : IOrderStatusService
         }
     }
 
-    public void EnsureCanSave(Order order)
+    public void EnsureCanUpdate(Order order)
     {
         if (order.Status != OrderStatus.Pending)
         {

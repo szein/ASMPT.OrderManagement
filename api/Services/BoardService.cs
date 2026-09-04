@@ -16,7 +16,7 @@ public class BoardService : IBoardService
         return await _boardRepository.GetAllAsync();
     }
 
-    public async Task<List<BoardComponent>> GetComponentsAsync(int boardId)
+    public async Task<List<OrderBoardComponent>> GetComponentsAsync(int boardId)
     {
         return await _boardRepository.GetComponentsAsync(boardId);
     }
@@ -30,8 +30,6 @@ public class BoardService : IBoardService
     public async Task<Board> CreateAsync(string name, string description, double length, double width)
     {
         _logger.LogInformation("Creating a new board with name {BoardName}.", name);
-
-        ValidateBoard(name, description, length, width);
 
         var board = new Board
         {
@@ -57,8 +55,6 @@ public class BoardService : IBoardService
             return null;
         }
 
-        ValidateBoard(name, description, length, width);
-
         existingBoard.Name = name.Trim();
         existingBoard.Description = description.Trim();
         existingBoard.Length = length;
@@ -67,31 +63,6 @@ public class BoardService : IBoardService
         var updatedBoard = await _boardRepository.UpdateAsync(existingBoard);
         _logger.LogInformation("Board {BoardId} was successfully updated.", updatedBoard.Id);
         return updatedBoard;
-    }
-
-    public async Task<Board?> UpdateComponentAssignmentsAsync(int boardId, IEnumerable<BoardComponentAssignment> componentAssignments)
-    {
-        _logger.LogInformation("Updating component assignments for board {BoardId}.", boardId);
-
-        if (componentAssignments is null)
-        {
-            throw new ArgumentException("Component assignments are required.", nameof(componentAssignments));
-        }
-
-        var existingBoard = await _boardRepository.GetByIdAsync(boardId);
-        if (existingBoard is null)
-        {
-            _logger.LogWarning("Component assignment update requested for missing board {BoardId}.", boardId);
-            return null;
-        }
-
-        var normalizedAssignments = componentAssignments.ToList();
-        if (normalizedAssignments.Any(a => a.ComponentId <= 0 || a.Quantity <= 0))
-        {
-            throw new ArgumentException("Each component assignment must include a valid component ID and quantity greater than zero.", nameof(componentAssignments));
-        }
-
-        return await _boardRepository.UpdateComponentAssignmentsAsync(boardId, normalizedAssignments);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -105,28 +76,5 @@ public class BoardService : IBoardService
         }
 
         return deleted;
-    }
-
-    private static void ValidateBoard(string name, string description, double length, double width)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("Board name is required.", nameof(name));
-        }
-
-        if (description is null)
-        {
-            throw new ArgumentException("Board description is required.", nameof(description));
-        }
-
-        if (length <= 0)
-        {
-            throw new ArgumentException("Board length must be greater than zero.", nameof(length));
-        }
-
-        if (width <= 0)
-        {
-            throw new ArgumentException("Board width must be greater than zero.", nameof(width));
-        }
     }
 }

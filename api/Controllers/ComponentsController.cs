@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using core.Models;
+using System.ComponentModel.DataAnnotations;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -20,97 +21,86 @@ public class ComponentsController : ControllerBase
     }
 
     [HttpGet("types")]
-    public async Task<ActionResult<List<ComponentType>>> GetAllTypes() => Ok(await _componentTypeService.GetAllAsync());
+    public async Task<ActionResult<List<ComponentType>>> GetAllTypes()
+    {
+        try { return Ok(await _componentTypeService.GetAllAsync()); }
+        catch (Exception ex) { return HandleException(ex, "GetAllTypes"); }
+    }
 
     [HttpGet("types/{id:int}")]
     public async Task<ActionResult<ComponentType>> GetTypeById(int id)
     {
-        var componentType = await _componentTypeService.GetByIdAsync(id);
-        return componentType is null ? NotFound() : Ok(componentType);
-    }
-
-    [HttpPost("types")]
-    public async Task<ActionResult<ComponentType>> CreateType([FromBody] CreateComponentTypeRequest request)
-    {
-        if (request is null) return BadRequest();
         try
         {
-            var componentType = await _componentTypeService.CreateAsync(request.Name, request.Description);
-            return CreatedAtAction(nameof(GetTypeById), new { id = componentType.Id }, componentType);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
-
-    [HttpPut("types/{id:int}")]
-    public async Task<ActionResult<ComponentType>> UpdateType(int id, [FromBody] UpdateComponentTypeRequest request)
-    {
-        if (request is null) return BadRequest();
-        try
-        {
-            var componentType = await _componentTypeService.UpdateAsync(id, request.Name, request.Description);
+            var componentType = await _componentTypeService.GetByIdAsync(id);
             return componentType is null ? NotFound() : Ok(componentType);
         }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        catch (Exception ex) { return HandleException(ex, $"GetTypeById({id})"); }
     }
 
     [HttpDelete("types/{id:int}")]
     public async Task<IActionResult> DeleteType(int id)
     {
-        var deleted = await _componentTypeService.DeleteAsync(id);
-        return deleted ? NoContent() : NotFound();
+        try
+        {
+            var deleted = await _componentTypeService.DeleteAsync(id);
+            return deleted ? NoContent() : NotFound();
+        }
+        catch (Exception ex) { return HandleException(ex, $"DeleteType({id})"); }
     }
 
     [HttpGet]
     public async Task<ActionResult<List<Component>>> GetAll()
     {
         _logger.LogInformation("GET /api/components requested.");
-        var components = await _componentService.GetAllAsync();
-        _logger.LogInformation("Returning {ComponentCount} components.", components?.Count);
-        return Ok(components);
+        try
+        {
+            var components = await _componentService.GetAllAsync();
+            _logger.LogInformation("Returning {ComponentCount} components.", components?.Count);
+            return Ok(components);
+        }
+        catch (Exception ex) { return HandleException(ex, "GetAll"); }
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Component>> GetById(int id)
     {
         _logger.LogInformation("GET /api/components/{ComponentId} requested.", id);
-        var component = await _componentService.GetByIdAsync(id);
-        if (component is null)
+        try
         {
-            _logger.LogWarning("Component {ComponentId} was not found.", id);
-            return NotFound();
-        }
+            var component = await _componentService.GetByIdAsync(id);
+            if (component is null)
+            {
+                _logger.LogWarning("Component {ComponentId} was not found.", id);
+                return NotFound();
+            }
 
-        _logger.LogInformation("Component {ComponentId} returned successfully.", id);
-        return Ok(component);
+            _logger.LogInformation("Component {ComponentId} returned successfully.", id);
+            return Ok(component);
+        }
+        catch (Exception ex) { return HandleException(ex, $"GetById({id})"); }
     }
 
     [HttpPost]
     public async Task<ActionResult<Component>> Create([FromBody] CreateComponentRequest request)
     {
-        _logger.LogInformation("POST /api/components requested for component type {ComponentTypeId}.", request?.ComponentTypeId ?? 0);
+        _logger.LogInformation("POST /api/components requested for component type {ComponentTypeName}.", request?.Name);
 
-        if (request is null)
+        if (request is null || !ModelState.IsValid)
         {
-            _logger.LogWarning("Create component failed because the request body was null.");
-            return BadRequest();
+            _logger.LogWarning("Create component failed because the request was invalid.");
+            return BadRequest(ModelState);
         }
 
         try
         {
-            var component = await _componentService.CreateAsync(request.ComponentTypeId, request.Quantity);
+            var component = await _componentService.CreateAsync(request.Name, request.Description, request.Quantity);
             _logger.LogInformation("Component {ComponentId} created successfully.", component.Id);
             return CreatedAtAction(nameof(GetById), new { id = component.Id }, component);
         }
-        catch (ArgumentException ex)
+        catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Validation failed while creating a component.");
-            return BadRequest(ex.Message);
+            return HandleException(ex, "Create");
         }
     }
 
@@ -119,15 +109,15 @@ public class ComponentsController : ControllerBase
     {
         _logger.LogInformation("PUT /api/components/{ComponentId} requested.", id);
 
-        if (request is null)
+        if (request is null || !ModelState.IsValid)
         {
-            _logger.LogWarning("Update component failed because the request body was null for component {ComponentId}.", id);
-            return BadRequest();
+            _logger.LogWarning("Update component failed because the request was invalid for component {ComponentId}.", id);
+            return BadRequest(ModelState);
         }
 
         try
         {
-            var component = await _componentService.UpdateAsync(id, request.ComponentTypeId, request.Quantity);
+            var component = await _componentService.UpdateAsync(id, request.Name, request.Description, request.Quantity);
             if (component is null)
             {
                 _logger.LogWarning("Update failed because component {ComponentId} was not found.", id);
@@ -137,10 +127,9 @@ public class ComponentsController : ControllerBase
             _logger.LogInformation("Component {ComponentId} updated successfully.", id);
             return Ok(component);
         }
-        catch (ArgumentException ex)
+        catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Validation failed while updating component {ComponentId}.", id);
-            return BadRequest(ex.Message);
+            return HandleException(ex, $"Update({id})");
         }
     }
 
@@ -148,20 +137,30 @@ public class ComponentsController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         _logger.LogInformation("DELETE /api/components/{ComponentId} requested.", id);
-        var deleted = await _componentService.DeleteAsync(id);
-
-        if (!deleted)
+        try
         {
-            _logger.LogWarning("Delete failed because component {ComponentId} was not found.", id);
-            return NotFound();
-        }
+            var deleted = await _componentService.DeleteAsync(id);
 
-        _logger.LogInformation("Component {ComponentId} deleted successfully.", id);
-        return NoContent();
+            if (!deleted)
+            {
+                _logger.LogWarning("Delete failed because component {ComponentId} was not found.", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Component {ComponentId} deleted successfully.", id);
+            return NoContent();
+        }
+        catch (Exception ex) { return HandleException(ex, $"Delete({id})"); }
+    }
+
+    private ObjectResult HandleException(Exception exception, string operation)
+    {
+        _logger.LogError(exception, "Unhandled exception occurred in {Operation}.", operation);
+        return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+        {
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An unexpected error occurred.",
+            Detail = exception.Message
+        });
     }
 }
-
-public record CreateComponentRequest(int ComponentTypeId, int Quantity);
-public record UpdateComponentRequest(int ComponentTypeId, int Quantity);
-public record CreateComponentTypeRequest(string Name, string Description);
-public record UpdateComponentTypeRequest(string Name, string Description);

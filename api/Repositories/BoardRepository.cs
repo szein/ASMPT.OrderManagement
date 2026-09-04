@@ -17,16 +17,15 @@ public class BoardRepository : IBoardRepository
 
         return await _context.Boards
             .Include(b => b.BoardComponents)
-            // .ThenInclude(bc => bc.Component)
             .AsNoTracking()
-            .OrderBy(b => b.Id)
+            .OrderBy(b => b.Name)
             .ToListAsync();
     }
 
-    public async Task<List<BoardComponent>> GetComponentsAsync(int boardId)
+    public async Task<List<OrderBoardComponent>> GetComponentsAsync(int boardId)
     {
-        return await _context.BoardComponents
-            .Where(boardComponent => boardComponent.BoardId == boardId)
+        return await _context.OrderBoardComponents
+            .Where(boardComponent => boardComponent.OrderBoard.BoardId  == boardId)
             .Include(boardComponent => boardComponent.Component)
             .ThenInclude(component => component.ComponentType)
             .AsNoTracking()
@@ -66,99 +65,7 @@ public class BoardRepository : IBoardRepository
         _logger.LogInformation("Board {BoardId} was updated successfully.", board.Id);
         return board;
     }
-
-    public async Task<Board?> UpdateComponentAssignmentsAsync(int boardId, IEnumerable<BoardComponentAssignment> componentAssignments)
-    {
-        _logger.LogInformation("Updating component assignments for board {BoardId}.", boardId);
-
-        if (componentAssignments is null)
-        {
-            throw new ArgumentException("Component assignments are required.", nameof(componentAssignments));
-        }
-
-        var requestedAssignments = componentAssignments
-            .Where(a => a is not null)
-            .ToList();
-
-        if (requestedAssignments.Any(a => a.ComponentId <= 0 || a.Quantity <= 0))
-        {
-            throw new ArgumentException("Each component assignment must include a valid component ID and a quantity greater than zero.", nameof(componentAssignments));
-        }
-
-        var duplicateComponentIds = requestedAssignments
-            .GroupBy(a => a.ComponentId)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToList();
-
-        if (duplicateComponentIds.Count > 0)
-        {
-            throw new ArgumentException("Duplicate component IDs were supplied for the same board update.", nameof(componentAssignments));
-        }
-
-        var boardExists = await _context.Boards.AnyAsync(b => b.Id == boardId);
-        if (!boardExists)
-        {
-            _logger.LogWarning("Component assignment update requested for missing board {BoardId}.", boardId);
-            return null;
-        }
-
-        var requestedComponentIds = requestedAssignments.Select(a => a.ComponentId).ToHashSet();
-        var validComponentIds = await _context.Components
-            .Where(c => requestedComponentIds.Contains(c.Id))
-            .Select(c => c.Id)
-            .ToListAsync();
-
-        if (validComponentIds.Count != requestedComponentIds.Count)
-        {
-            throw new ArgumentException("One or more component IDs do not exist.", nameof(componentAssignments));
-        }
-
-        var existingAssignments = await _context.BoardComponents
-            .Where(bc => bc.BoardId == boardId)
-            .ToListAsync();
-
-        var currentAssignmentsByComponentId = existingAssignments
-            .ToDictionary(bc => bc.ComponentId, bc => bc);
-
-        var targetAssignmentsByComponentId = requestedAssignments
-            .ToDictionary(a => a.ComponentId, a => a);
-
-        var assignmentsToRemove = existingAssignments
-            .Where(bc => !targetAssignmentsByComponentId.ContainsKey(bc.ComponentId))
-            .ToList();
-
-        if (assignmentsToRemove.Count > 0)
-        {
-            _context.BoardComponents.RemoveRange(assignmentsToRemove);
-        }
-
-        foreach (var assignment in requestedAssignments)
-        {
-            if (currentAssignmentsByComponentId.TryGetValue(assignment.ComponentId, out var existingAssignment))
-            {
-                existingAssignment.BoardComponentQuantity = assignment.Quantity;
-            }
-            else
-            {
-                _context.BoardComponents.Add(new BoardComponent
-                {
-                    BoardId = boardId,
-                    ComponentId = assignment.ComponentId,
-                    BoardComponentQuantity = assignment.Quantity
-                });
-            }
-        }
-
-        await _context.SaveChangesAsync();
-
-        return await _context.Boards
-            .Include(b => b.BoardComponents)
-            .ThenInclude(bc => bc.Component)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Id == boardId);
-    }
-
+    
     public async Task<bool> DeleteAsync(int id)
     {
         _logger.LogInformation("Attempting to delete board {BoardId}.", id);

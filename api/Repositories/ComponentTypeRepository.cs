@@ -16,7 +16,7 @@ public class ComponentTypeRepository : IComponentTypeRepository
         _logger.LogInformation("Fetching all component types from the database.");
 
         return await _context.ComponentTypes
-            .Include(ct => ct.Components)
+            .Include(ct => ct.Component)
             .AsNoTracking()
             .OrderBy(ct => ct.Id)
             .ToListAsync();
@@ -27,7 +27,7 @@ public class ComponentTypeRepository : IComponentTypeRepository
         _logger.LogInformation("Fetching component type with Id {ComponentTypeId}.", id);
 
         return await _context.ComponentTypes
-            .Include(ct => ct.Components)
+            .Include(ct => ct.Component)
             .AsNoTracking()
             .FirstOrDefaultAsync(ct => ct.Id == id);
     }
@@ -47,11 +47,18 @@ public class ComponentTypeRepository : IComponentTypeRepository
     {
         _logger.LogInformation("Updating component type {ComponentTypeId}.", componentType.Id);
 
-        _context.ComponentTypes.Update(componentType);
+        var trackedComponentType = await _context.ComponentTypes.FindAsync(componentType.Id);
+        if (trackedComponentType is null)
+        {
+            throw new InvalidOperationException($"Component type {componentType.Id} was not found.");
+        }
+
+        trackedComponentType.Name = componentType.Name;
+        trackedComponentType.Description = componentType.Description;
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Component type {ComponentTypeId} was updated successfully.", componentType.Id);
-        return componentType;
+        return trackedComponentType;
     }
 
     public async Task<bool> DeleteAsync(int id)

@@ -248,13 +248,17 @@ namespace api.Migrations
 
             modelBuilder.Entity("core.Models.BoardComponent", b =>
                 {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("BoardComponentQuantity")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("BoardId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ComponentId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("BoardComponentQuantity")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
@@ -270,17 +274,23 @@ namespace api.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("BoardId", "ComponentId");
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
 
                     b.HasIndex("ComponentId");
 
-                    b.ToTable("BoardComponents");
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("BoardComponent");
                 });
 
             modelBuilder.Entity("core.Models.Component", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ComponentTypeId")
@@ -306,8 +316,6 @@ namespace api.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ComponentTypeId");
 
                     b.ToTable("Components");
                 });
@@ -384,35 +392,48 @@ namespace api.Migrations
 
             modelBuilder.Entity("core.Models.OrderBoard", b =>
                 {
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("BoardId")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("OrderId", "BoardId");
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("BoardId");
+
+                    b.HasIndex("OrderId");
 
                     b.ToTable("OrderBoards");
                 });
 
-            modelBuilder.Entity("core.Models.OrderComponent", b =>
+            modelBuilder.Entity("core.Models.OrderBoardComponent", b =>
                 {
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("ComponentId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid>("OrderBoardId")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("OrderId", "ComponentId");
+                    b.HasKey("Id");
 
                     b.HasIndex("ComponentId");
 
-                    b.ToTable("OrderComponents");
+                    b.HasIndex("OrderBoardId", "ComponentId")
+                        .IsUnique();
+
+                    b.ToTable("OrderBoardComponents");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -480,16 +501,24 @@ namespace api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("core.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Board");
 
                     b.Navigation("Component");
+
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("core.Models.Component", b =>
                 {
                     b.HasOne("core.Models.ComponentType", "ComponentType")
-                        .WithMany("Components")
-                        .HasForeignKey("ComponentTypeId")
+                        .WithOne("Component")
+                        .HasForeignKey("core.Models.Component", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -515,23 +544,23 @@ namespace api.Migrations
                     b.Navigation("Order");
                 });
 
-            modelBuilder.Entity("core.Models.OrderComponent", b =>
+            modelBuilder.Entity("core.Models.OrderBoardComponent", b =>
                 {
                     b.HasOne("core.Models.Component", "Component")
                         .WithMany()
                         .HasForeignKey("ComponentId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("core.Models.Order", "Order")
-                        .WithMany("OrderComponents")
-                        .HasForeignKey("OrderId")
+                    b.HasOne("core.Models.OrderBoard", "OrderBoard")
+                        .WithMany("OrderBoardComponents")
+                        .HasForeignKey("OrderBoardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Component");
 
-                    b.Navigation("Order");
+                    b.Navigation("OrderBoard");
                 });
 
             modelBuilder.Entity("core.Models.Board", b =>
@@ -548,14 +577,18 @@ namespace api.Migrations
 
             modelBuilder.Entity("core.Models.ComponentType", b =>
                 {
-                    b.Navigation("Components");
+                    b.Navigation("Component")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("core.Models.Order", b =>
                 {
                     b.Navigation("OrderBoards");
+                });
 
-                    b.Navigation("OrderComponents");
+            modelBuilder.Entity("core.Models.OrderBoard", b =>
+                {
+                    b.Navigation("OrderBoardComponents");
                 });
 #pragma warning restore 612, 618
         }
