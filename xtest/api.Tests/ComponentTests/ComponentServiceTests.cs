@@ -10,7 +10,23 @@ public class ComponentServiceTests
     private DbContextFactory _dbContextFactory = new DbContextFactory();    
 
     [Fact]
-    public async Task Update_Component_Quantity()
+    public async Task Create_Component_Creates_Component_And_ComponentType()
+    {
+        await using var context = _dbContextFactory.CreateFakeDbContext();
+        var componentRepository = new ComponentRepository(context, A.Fake<ILogger<ComponentRepository>>());
+        var componentTypeRepository = new ComponentTypeRepository(context, A.Fake<ILogger<ComponentTypeRepository>>());
+        var service = new ComponentService(componentRepository, componentTypeRepository, A.Fake<ILogger<ComponentService>>());
+
+        var component = await service.CreateAsync("Type 1", "Description", 10);
+
+        Assert.Equal(10, component.Quantity);
+        Assert.Equal("Type 1", (await context.ComponentTypes.SingleAsync()).Name);
+        Assert.Equal(component.ComponentTypeId, (await context.ComponentTypes.SingleAsync()).Id);
+        Assert.Equal(component.ComponentTypeId, (await context.Components.SingleAsync()).ComponentTypeId);
+    }
+
+    [Fact]
+    public async Task Update_Component_Updates_Component_And_Existing_ComponentType()
     {
         await using var context = _dbContextFactory.CreateFakeDbContext();
         context.ComponentTypes.Add(new ComponentType { Id = 1, Name = "Type 1", Description = "Description" });
@@ -24,11 +40,12 @@ public class ComponentServiceTests
             componentTypeRepository,
             A.Fake<ILogger<ComponentService>>());
 
-        var updatedComponent = await service.UpdateAsync(1, 1, 20);
+        var updatedComponent = await service.UpdateAsync(1, "Updated Type", "Updated description", 20);
 
         Assert.NotNull(updatedComponent);
         Assert.Equal(20, updatedComponent.Quantity);
         Assert.Equal(20, (await context.Components.FindAsync(1))!.Quantity);
+        Assert.Equal("Updated Type", (await context.ComponentTypes.FindAsync(1))!.Name);
     }
 
     [Fact]

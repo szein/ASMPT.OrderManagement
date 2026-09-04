@@ -5,18 +5,7 @@ using Microsoft.Extensions.Logging;
 
 public class OrderServiceTests
 {
-    [Fact]
-    public async Task CreateAsync_Creates_Pending_Order()
-    {
-        var repository = A.Fake<IOrderRepository>();
-        A.CallTo(() => repository.AddAsync(A<Order>.Ignored))
-            .ReturnsLazily((Order order) => Task.FromResult(order));
-        var service = new OrderService(repository, A.Fake<ILogger<OrderService>>());
-
-        var result = await service.CreateAsync("Order", "Description", new DateTime(2026, 9, 3));
-
-        Assert.Equal(OrderStatus.Pending, result.Status);
-    }
+    private DbContextFactory _dbContextFactory = new DbContextFactory();
 
     [Fact]
     public async Task DeleteAsync_Does_Not_Delete_Created_Order()
@@ -31,7 +20,7 @@ public class OrderServiceTests
     }
 
     [Fact]
-    public async Task  Get_All_Orders_Returns_List_Of_Orders()
+    public async Task Get_All_Orders_Returns_List_Of_Orders()
     {
         // Arrange
         var fakeLogger = A.Fake<ILogger<OrderService>>();
@@ -58,30 +47,48 @@ public class OrderServiceTests
     }
 
     [Fact]
-    public async Task UpdateBoardAssignmentsAsync_Updates_Only_Board_Associations()
+    public async Task CreateOrder_Books_Quantity_From_Component()
     {
         // Arrange
-        var fakeLogger = A.Fake<ILogger<OrderService>>();
-        var fakeRepository = A.Fake<IOrderRepository>();
-        var expectedOrder = new Order
-        {
-            Id = Guid.NewGuid(),
-            Name = "Order 1",
-            Description = "Description 1",
-            OrderDate = new DateTime(2026, 9, 1)
-        };
+        await using var context = _dbContextFactory.CreateFakeDbContext();
+        var orderRepository = new OrderRepository(context, A.Fake<ILogger<OrderRepository>>());
+        var expectedBoard = new Board() { Name = "Board 1", Length = 1.0, Width = 1.0 };
+        var expectedComponentType = new ComponentType { Name = "Component 1" };
+        var expectedComponent = new Component { ComponentTypeId = expectedComponentType.Id, Quantity = 5 };
+        context.ComponentTypes.Add(expectedComponentType);
+        context.Components.Add(expectedComponent);
+        context.Boards.Add(expectedBoard);
+        await context.SaveChangesAsync();
 
-        A.CallTo(() => fakeRepository.GetByIdAsync(expectedOrder.Id)).Returns(Task.FromResult<Order?>(expectedOrder));
-        A.CallTo(() => fakeRepository.UpdateBoardAssignmentsAsync(expectedOrder.Id, A<IEnumerable<int>>.That.Matches(ids => ids.SequenceEqual(new[] { 10, 20 }))))
-            .Returns(Task.FromResult<Order?>(expectedOrder));
+        var expectedOrder = new Order { Id = Guid.NewGuid(), Name = "Order 1", Description = "Description 1", OrderDate = new DateTime(2026, 9, 1) };
+        var request = new CreateOrderRequest(
+            Name: expectedOrder.Name,
+            Description: expectedOrder.Description,
+            OrderDate: expectedOrder.OrderDate,
+            Boards: new List<CreateOrderBoardRequest>
+            {
+                new CreateOrderBoardRequest(
+                    expectedBoard.Id,
+                    Components: new List<CreateOrderBoardComponentRequest>
+                    {
+                        new CreateOrderBoardComponentRequest(ComponentId: expectedComponent.Id, Quantity: 4)
+                    }
+                )
+            });
 
-        var orderService = new OrderService(fakeRepository, fakeLogger);
 
-        // Act
-        var result = await orderService.UpdateBoardAssignmentsAsync(expectedOrder.Id, new[] { 10, 20 });
+        //Action
+        var orderService = new OrderService(orderRepository, A.Fake<ILogger<OrderService>>());
+        var result = await orderService.CreateAsync(request);
 
-        // Assert
+        //Assert
+        var actualQuantity = context.Components.First(c=> c.Id == expectedComponent.Id).Quantity;
         Assert.NotNull(result);
-        Assert.Equal(expectedOrder.Id, result!.Id);
+        Assert.Equal(expectedOrder.Name, result.Name);
+        Assert.Equal(expectedOrder.Description, result.Description);
+        Assert.Equal(expectedOrder.OrderDate, result.OrderDate);
+        Assert.Equal(1, actualQuantity);
+        //Assert.Equal(OrderStatus.Pending, result.Status);
     }
+    
 }

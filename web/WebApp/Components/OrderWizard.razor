@@ -9,39 +9,34 @@
         <RadzenStepsItem Text="Order details">
             <RadzenTemplateForm TItem="Order" Data="newOrder">
                 <RadzenStack Gap="1rem">
-                    <RadzenTextBox @bind-Value="newOrder.Name" Name="OrderName" Placeholder="Order name" Style="width:100%" />
-                    <RadzenTextArea @bind-Value="newOrder.Description" Name="OrderDescription" Placeholder="Description" Style="width:100%" />
-                    <RadzenDatePicker @bind-Value="newOrder.OrderDate" Name="OrderDate" ReadOnly="true" Style="width:100%" />
+                    <RadzenTextBox @bind-Value="newOrder.Name" Name="OrderName" Placeholder="Order name"
+                                   Style="width:100%" />
+                    <RadzenTextArea @bind-Value="newOrder.Description" Name="OrderDescription" Placeholder="Description"
+                                    Style="width:100%" />
+                    <RadzenDatePicker @bind-Value="newOrder.OrderDate" Name="OrderDate" ReadOnly="true"
+                                      Style="width:100%" />
                 </RadzenStack>
             </RadzenTemplateForm>
         </RadzenStepsItem>
         <RadzenStepsItem Text="Boards">
             <RadzenStack Gap="0.5rem">
-                <ItemSelector TItem="Board" TKey="int"
-                              Items="boards"
-                              @bind-SelectedItems="selectedBoards"
-                              ItemKeySelector="board => board.Id"
-                              ItemText="board => board.Name"
-                              TextProperty="Name"
-                              ValueProperty="Id"
-                              KeepSelectedItemsInDropdown="true"
-                              Placeholder="Select a board" />
+                <ItemSelector TItem="Board" TKey="int" Items="boards" @bind-SelectedItems="selectedBoards"
+                              ItemKeySelector="board => board.Id" ItemText="board => board.Name" TextProperty="Name"
+                              ValueProperty="Id" KeepSelectedItemsInDropdown="true" Placeholder="Select a board" />
             </RadzenStack>
         </RadzenStepsItem>
         <RadzenStepsItem Text="Components">
-                        <RadzenDropDown TValue="int" @bind-Value="selectedBoardId" Data="DistinctSelectedBoards" TextProperty="Name" ValueProperty="Id"
-                                                        Placeholder="Select a board" Style="width:100%; margin-bottom:1rem" />
-            <ItemSelector TItem="OrderComponentOption" TKey="int"
-                          Items="componentOptions"
-                                                    @bind-SelectedItems="SelectedComponentsForBoard"
-                          ItemKeySelector="component => component.Id"
-                          ItemText="component => component.ComponentTypeName"
-                          TextProperty="ComponentTypeName"
-                          ValueProperty="Id"
-                          StockSelector="component => AvailableQuantity(component.Id)"
-                          CreateSelectedItem="(component, quantity) => component with { Quantity = quantity }"
-                          ShowQuantity="true"
-                          Placeholder="Select a component" />
+            <RadzenDropDown TValue="int" @bind-Value="selectedBoardId" Data="DistinctSelectedBoards" TextProperty="Name"
+                            ValueProperty="Id" Placeholder="Select a board" Style="width:100%; margin-bottom:1rem" />
+            <ComponentSelector TItem="ComponentSelectorItem" TKey="int"
+                               Items="selectorComponents" SelectedItems="SelectedComponentsForBoard"
+                               SelectedItemsChanged="items => SelectedComponentsForBoard = items"
+                               ItemKeySelector="component => component.Id"
+                               ItemText="component => component.Name"
+                               QuantitySelector="component => component.Quantity"
+                               AvailableQuantity="component => AvailableQuantity(component.Id)"
+                               CreateSelectedItem="(component, quantity) => component with { Quantity = quantity }"
+                               TextProperty="Name" ValueProperty="Id" />
         </RadzenStepsItem>
     </Steps>
 </RadzenSteps>
@@ -59,34 +54,32 @@
         }
         else
         {
-            <RadzenButton Text="Save draft" Icon="save" ButtonStyle="ButtonStyle.Secondary" Click="@SaveDraft" Disabled="@HasComponents" />
-            <RadzenButton Text="Save" Icon="save" ButtonStyle="ButtonStyle.Primary" Click="@Save" Disabled="@(!CanSave)" />
-            <RadzenButton Text="Save" Icon="save" ButtonStyle="ButtonStyle.Primary" Click="@Save" Disabled="@(!CanSave)" />
+            <RadzenButton Text="Save draft" Icon="save" ButtonStyle="ButtonStyle.Secondary" Click="@SaveDraft"
+                          Disabled="@HasComponents" />
+            <RadzenButton Text="Save" Icon="save" ButtonStyle="ButtonStyle.Success" Click="@Save" Disabled="@(!CanSave)" />
         }
     </RadzenStack>
 </RadzenStack>
 
 @code {
     private int wizardStep;
-    private Order newOrder = new() { OrderDate = DateTime.Now, Status = OrderStatus.Pending };
-    private IList<Board> boards = new List<Board>
+    private Order newOrder = new()
     {
-        new Board { Id = 1, Name = "Demo board A" },
-        new Board { Id = 2, Name = "Demo board B" }
-    };
-    private IList<OrderComponentOption> componentOptions = new List<OrderComponentOption>
-    {
-        new OrderComponentOption(1, "Type A", 5, ComponentStatus.Available),
-        new OrderComponentOption(2, "Type B", 10, ComponentStatus.Available),
-        new OrderComponentOption(3, "Type C", 0, ComponentStatus.OutOfStock)
+        OrderDate = DateTime.Now
     };
 
+    private IList<Board> boards = new List<Board>();
+    private IList<ComponentSelectorItem> selectorComponents = new List<ComponentSelectorItem>();
+    private record ComponentSelectorItem(int Id, string Name, int componentTypeId, int Quantity);
+    private record ComponentResponse(int Id, int Quantity, ComponentTypeResponse ComponentType);
+    private record ComponentTypeResponse(int Id, string Name);
+
     private IList<Board> selectedBoards = new List<Board>();
-    private readonly Dictionary<int, IList<OrderComponentOption>> componentsByBoard = new();
+    private readonly Dictionary<int, IList<ComponentSelectorItem>> componentsByBoard = new();
     private int selectedBoardId;
 
     private IEnumerable<Board> DistinctSelectedBoards => selectedBoards.GroupBy(board => board.Id).Select(group => group.First());
-    private IList<OrderComponentOption> SelectedComponentsForBoard
+    private IList<ComponentSelectorItem> SelectedComponentsForBoard
     {
         get => selectedBoardId > 0 && componentsByBoard.TryGetValue(selectedBoardId, out var components) ? components : [];
         set
@@ -102,11 +95,29 @@
     private bool CanSave => DistinctSelectedBoards.Any() && DistinctSelectedBoards.All(board =>
         componentsByBoard.TryGetValue(board.Id, out var components) && components.Count > 0);
 
-    private record OrderComponentOption(int Id, string ComponentTypeName, int Quantity, ComponentStatus Status);
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            boards = await http.GetFromJsonAsync<List<Board>>("boards") ?? [];
+            var componentResponse = await http.GetFromJsonAsync<List<ComponentResponse>>("components") ?? [];
+            selectorComponents = componentResponse
+                .Select(component => new ComponentSelectorItem(
+                    component.Id,
+                    component.ComponentType.Name,
+                    component.ComponentType.Id,
+                    component.Quantity))
+                .ToList();
+        }
+        catch (Exception exception)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, $"Could not load boards: {exception.Message}");
+        }
+    }
 
     private int AvailableQuantity(int componentId)
     {
-        var stock = componentOptions.First(component => component.Id == componentId).Quantity;
+        var stock = selectorComponents.First(component => component.Id == componentId).Quantity;
         var assigned = componentsByBoard.Values.SelectMany(components => components)
             .Where(component => component.Id == componentId)
             .Sum(component => component.Quantity);
@@ -143,45 +154,29 @@
         selectedBoardId = Convert.ToInt32(value);
     }
 
-    private async Task SaveDraft() => await PersistOrder(false);
+    private async Task SaveDraft() => await PersistOrder();
 
-    private async Task Save() => await PersistOrder(true);
+    private async Task Save() => await PersistOrder();
 
-    private async Task PersistOrder(bool finalize)
+    private async Task PersistOrder()
     {
         try
         {
-            var orderResponse = await http.PostAsJsonAsync("orders", new
-            {
+            var createOrderRequest = new CreateOrderRequest(
                 newOrder.Name,
                 newOrder.Description,
-                newOrder.OrderDate
-            });
+                newOrder.OrderDate,
+                DistinctSelectedBoards.Select(board => new CreateOrderBoardRequest(
+                    board.Id,
+                    componentsByBoard.TryGetValue(board.Id, out var components)
+                        ? components.Select(component => new CreateOrderBoardComponentRequest(
+                            component.Id,
+                            component.Quantity)).ToList()
+                        : [])).ToList());
+
+            var orderResponse = await http.PostAsJsonAsync("orders", createOrderRequest);
             orderResponse.EnsureSuccessStatusCode();
             var savedOrder = await orderResponse.Content.ReadFromJsonAsync<Order>() ?? newOrder;
-
-            var boardResponse = await http.PutAsJsonAsync($"orders/{savedOrder.Id}/boards", new
-            {
-                BoardIds = DistinctSelectedBoards.Select(board => board.Id).ToList()
-            });
-            boardResponse.EnsureSuccessStatusCode();
-
-            if (finalize)
-            {
-                var componentResponse = await http.PutAsJsonAsync($"orders/{savedOrder.Id}/components", new
-                {
-                    Components = componentsByBoard.Values
-                        .SelectMany(components => components)
-                        .GroupBy(component => component.Id)
-                        .Select(group => new OrderComponentAssignment(group.Key, group.Sum(component => component.Quantity)))
-                        .ToList()
-                });
-                componentResponse.EnsureSuccessStatusCode();
-
-                var saveResponse = await http.PostAsync($"orders/{savedOrder.Id}/save", null);
-                saveResponse.EnsureSuccessStatusCode();
-                savedOrder = await saveResponse.Content.ReadFromJsonAsync<Order>() ?? savedOrder;
-            }
 
             DialogService.Close(savedOrder);
         }

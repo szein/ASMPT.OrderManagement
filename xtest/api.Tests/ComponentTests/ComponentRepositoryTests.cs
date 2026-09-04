@@ -19,13 +19,14 @@ public class ComponentRepositoryTests
         var removableComponent = new Component { Id = 2, ComponentTypeId = 2, Quantity = 10, ComponentType = removableType };
         var board = new Board { Id = 1, Name = "Board", Description = "Board" };
         var order = new Order { Id = Guid.NewGuid(), Name = "Order", OrderDate = DateTime.UtcNow };
+        var expectedOrderBoard = new OrderBoard { OrderId = order.Id, BoardId = board.Id };
 
         context.ComponentTypes.AddRange(orderedType, removableType);
         context.Components.AddRange(orderedComponent, removableComponent);
         context.Boards.Add(board);
         context.Orders.Add(order);
-        context.OrderBoards.Add(new OrderBoard { OrderId = order.Id, BoardId = board.Id });
-        context.BoardComponents.Add(new BoardComponent { BoardId = board.Id, ComponentId = orderedComponent.Id, BoardComponentQuantity = 1 });
+        context.OrderBoards.Add(expectedOrderBoard);
+        context.OrderBoardComponents.Add(new OrderBoardComponent { OrderBoardId = expectedOrderBoard.Id, ComponentId = orderedComponent.Id, Quantity = 1 });
         await context.SaveChangesAsync();
 
         var repository = new ComponentRepository(context, A.Fake<ILogger<ComponentRepository>>());

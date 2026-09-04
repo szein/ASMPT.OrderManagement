@@ -36,7 +36,8 @@
         @foreach (var item in SelectedItems)
         {
             <RadzenCard>
-                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Normal" AlignItems="AlignItems.Center">
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Text" Size="ButtonSize.Small" Click="@(() => RemoveItem(ItemKeySelector(item)))" />
                     <RadzenStack Gap="0.15rem">
                         <RadzenText Text="@ItemText(item)" TextStyle="TextStyle.Body1" />
                         @if (ShowQuantity)
@@ -44,7 +45,7 @@
                             <RadzenText Text="@($"Quantity: {StockSelector?.Invoke(item) ?? 0}")" TextStyle="TextStyle.Caption" />
                         }
                     </RadzenStack>
-                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Text" Size="ButtonSize.Small" Click="@(() => RemoveItem(ItemKeySelector(item)))" />
+                    
                 </RadzenStack>
             </RadzenCard>
         }
@@ -61,14 +62,16 @@
     [Parameter] public Func<TItem, int?>? StockSelector { get; set; }
     [Parameter] public Func<TItem, int, TItem>? CreateSelectedItem { get; set; }
     [Parameter] public bool ShowQuantity { get; set; }
+    [Parameter] public bool KeepSelectedItemsInDropdown { get; set; }
     [Parameter] public string Placeholder { get; set; } = "Select an item";
     [Parameter] public EventCallback<IList<TItem>> SelectedItemsChanged { get; set; }
 
     private TKey selectedKey = default!;
     private int quantityToAdd = 1;
 
-    private IEnumerable<TItem> AvailableItems => Items
-        .Where(item => SelectedItems.All(selected => !EqualityComparer<TKey>.Default.Equals(ItemKeySelector(selected), ItemKeySelector(item))));
+    private IEnumerable<TItem> AvailableItems => KeepSelectedItemsInDropdown
+        ? Items
+        : Items.Where(item => SelectedItems.All(selected => !EqualityComparer<TKey>.Default.Equals(ItemKeySelector(selected), ItemKeySelector(item))));
 
     private TItem? SelectedItem
     {

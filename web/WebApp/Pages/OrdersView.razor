@@ -4,28 +4,9 @@
 @inject DialogService DialogService;
 
 <style>
-    .rz-grid-table {
-    width: unset;
-    overflow: hidden !important;
-    }
-    .rz-datagrid {
-        overflow: hidden !important;
-    }
-
-    .component-selection {
-        display: grid;
-        gap: 1rem;
-        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-    }
-
-    @@media (max-width: 768px) {
-        .component-selection {
-            grid-template-columns: 1fr;
-        }
-    }
     .wrap-cell {
         white-space: normal !important;
-        word-break: break-word;
+        word-break: break-word !important;
     }
 </style>
 
@@ -36,7 +17,7 @@ AllowFiltering="true"
 AllowPaging="true"
 PageSize="5"
 AllowSorting="true"
-ExpandMode="DataGridExpandMode.Single"
+ExpandMode="DataGridExpandMode.Multiple"
 RowExpand="@LoadBoards"
 SelectionMode="DataGridSelectionMode.Single"
 RowSelect="@OnOrderSelected"
@@ -49,10 +30,10 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
         <RadzenDataGrid Data="@GetBoards(order)" TItem="Board"
                         AllowPaging="true" PageSize="5" AllowSorting="true"
                         ExpandMode="DataGridExpandMode.Single"
-                        RowExpand="@LoadComponents" ColumnWidth="200px">
+                        RowExpand="@(board => LoadComponents(order, board))" ColumnWidth="150px">
             <Template Context="board">
-                <RadzenDataGrid Data="@GetComponents(board)" TItem="BoardComponentRow"
-                                AllowPaging="true" PageSize="5" AllowSorting="true" ColumnWidth="200px">
+                    <RadzenDataGrid Data="@GetComponents(order, board)" TItem="BoardComponentRow"
+                                AllowPaging="true" PageSize="5" AllowSorting="true" ColumnWidth="150px">
                     <Columns>
                         <RadzenDataGridColumn Property="@nameof(BoardComponentRow.ComponentTypeName)" Title="Type" />
                         <RadzenDataGridColumn Property="@nameof(BoardComponentRow.Quantity)" Title="Quantity" />
@@ -61,7 +42,7 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
             </Template>
             <Columns>
                 <RadzenDataGridColumn Property="@nameof(Board.Name)" Title="Name" />
-                <RadzenDataGridColumn Property="@nameof(Board.Description)" Title="Description" Width="100px" CssClass="wrap-cell" />
+                <RadzenDataGridColumn Property="@nameof(Board.Description)" Title="Description" Width="300px" CssClass="wrap-cell" />
                 <RadzenDataGridColumn Property="@nameof(Board.Length)" Title="Length" />
                 <RadzenDataGridColumn Property="@nameof(Board.Width)" Title="Width" />
             </Columns>
@@ -118,7 +99,7 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
     IEnumerable<Order> orders;
     Order selectedOrder;
     private readonly Dictionary<Guid, IList<Board>> boardsByOrder = new();
-    private readonly Dictionary<int, IList<BoardComponentRow>> componentsByBoard = new();
+    private readonly Dictionary<(Guid OrderId, int BoardId), IList<BoardComponentRow>> componentsByBoard = new();
 
 
     DataGridEditMode editMode = DataGridEditMode.Single;
@@ -148,8 +129,8 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
         {
             Console.WriteLine($"Error loading orders: {ex.Message}");
             orders = new List<Order>() { 
-                new Order() { Name = "Test Order", Description = "This is a test order", OrderDate = DateTime.Now, Status = OrderStatus.Pending },
-                new Order() { Name = "Sample Order", Description = "This is a sample order", OrderDate = DateTime.Now.AddDays(-1), Status = OrderStatus.Created },
+                new Order() { Name = "Test Order", Description = "This is a test data", OrderDate = DateTime.Now, Status = OrderStatus.Pending },
+                new Order() { Name = "Sample Order", Description = "This is a sample test order", OrderDate = DateTime.Now.AddDays(-1), Status = OrderStatus.Created },
             };
         }   
         
@@ -158,8 +139,8 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
     private IList<Board> GetBoards(Order order) =>
         boardsByOrder.TryGetValue(order.Id, out var boards) ? boards : [];
 
-    private IList<BoardComponentRow> GetComponents(Board board) =>
-        componentsByBoard.TryGetValue(board.Id, out var components) ? components : [];
+    private IList<BoardComponentRow> GetComponents(Order order, Board board) =>
+        componentsByBoard.TryGetValue((order.Id, board.Id), out var components) ? components : [];
 
     private async Task LoadBoards(Order order)
     {
@@ -169,11 +150,13 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
         }
     }
 
-    private async Task LoadComponents(Board board)
+    private async Task LoadComponents(Order order, Board board)
     {
-        if (!componentsByBoard.ContainsKey(board.Id))
+        var key = (order.Id, board.Id);
+        if (!componentsByBoard.ContainsKey(key))
         {
-            componentsByBoard[board.Id] = await http.GetFromJsonAsync<List<BoardComponentRow>>($"boards/{board.Id}/components") ?? [];
+            componentsByBoard[key] = await http.GetFromJsonAsync<List<BoardComponentRow>>(
+                $"orders/{order.Id}/boards/{board.Id}/components") ?? [];
         }
     }
 
@@ -181,13 +164,19 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
 
     async Task OpenOrderWizard()
     {
-        await DialogService.OpenAsync<OrderWizard>("Add New Order", new Dictionary<string, object>(), new DialogOptions
+        var result = await DialogService.OpenAsync<OrderWizard>("Add New Order", new Dictionary<string, object>(), new DialogOptions
         {
             Width = "900px",
             Resizable = true,
             Draggable = true,
             CloseDialogOnOverlayClick = false
         });
+
+        if (result is Order)
+        {
+            orders = await http.GetFromJsonAsync<List<Order>>("orders") ?? [];
+            await ordersGrid.Reload();
+        }
     }
 
     async Task EditRow(Order order)
@@ -239,34 +228,7 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
             await ordersGrid.Reload();
         }
     }
-
-    async Task InsertRow()
-    {
-        if (!ordersGrid.IsValid) return;
-
-        if (editMode == DataGridEditMode.Single)
-        {
-            Reset();
-        }
-
-        var order = new Order();
-        ordersToInsert.Add(order);
-        await ordersGrid.InsertRow(order);
-    }
-
-    async Task InsertAfterRow(Order row)
-    {
-        if (!ordersGrid.IsValid) return;
-
-        if (editMode == DataGridEditMode.Single)
-        {
-            Reset();
-        }
-
-        var order = new Order();
-        ordersToInsert.Add(order);
-        await ordersGrid.InsertAfterRow(order, row);
-    }
+    
 
     void OnCreateRow(Order order)
     {
