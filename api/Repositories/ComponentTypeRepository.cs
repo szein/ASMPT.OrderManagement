@@ -61,7 +61,7 @@ public class ComponentTypeRepository : IComponentTypeRepository
         return trackedComponentType;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool?> DeleteAsync(int id)
     {
         _logger.LogInformation("Attempting to delete component type {ComponentTypeId}.", id);
 
@@ -69,7 +69,7 @@ public class ComponentTypeRepository : IComponentTypeRepository
         if (componentType is null)
         {
             _logger.LogWarning("Delete requested for component type {ComponentTypeId}, but it was not found.", id);
-            return false;
+            return null;
         }
 
         _context.ComponentTypes.Remove(componentType);

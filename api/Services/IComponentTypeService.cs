@@ -5,5 +5,4 @@ public interface IComponentTypeService
     Task<ComponentType?> GetByIdAsync(int id);
     Task<ComponentType> CreateAsync(string name, string description);
     Task<ComponentType?> UpdateAsync(int id, string name, string description);
-    Task<bool> DeleteAsync(int id);
 }

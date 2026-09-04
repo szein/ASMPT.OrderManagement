@@ -60,17 +60,4 @@ public class ComponentTypeService : IComponentTypeService
         _logger.LogInformation("Component type {ComponentTypeId} was successfully updated.", updatedComponentType.Id);
         return updatedComponentType;
     }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        _logger.LogInformation("Delete request received for component type {ComponentTypeId}.", id);
-        var deleted = await _componentRepository.DeleteTypeAsync(id);
-
-        if (!deleted)
-        {
-            _logger.LogWarning("Delete operation failed because component type {ComponentTypeId} was not found.", id);
-        }
-
-        return deleted;
-    }
 }

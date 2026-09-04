@@ -4,7 +4,6 @@ public interface IComponentRepository
     Task<Component?> GetByIdAsync(int id);
     Task<Component> AddAsync(Component component);
     Task<Component> UpdateAsync(Component component);
-    Task<bool> DeleteAsync(int id);
-    Task<bool> DeleteTypeAsync(int id);
+    Task<bool?> DeleteAsync(int id);
     Task<int> GetAvailableQuantityAsync(int componentTypeId);
 }

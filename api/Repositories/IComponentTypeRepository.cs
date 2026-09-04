@@ -23,10 +23,4 @@ public interface IComponentTypeRepository
     /// <param name="componentType"></param>
     /// <returns></returns>
     Task<ComponentType> UpdateAsync(ComponentType componentType);
-    /// <summary>
-    /// Delete Component
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    Task<bool> DeleteAsync(int id);
 }

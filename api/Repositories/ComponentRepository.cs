@@ -65,7 +65,7 @@ public class ComponentRepository : IComponentRepository
             .SingleAsync(c => c.Id == component.Id);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool?> DeleteAsync(int id)
     {
         _logger.LogInformation("Attempting to delete component {ComponentId}.", id);
 
@@ -73,19 +73,18 @@ public class ComponentRepository : IComponentRepository
         if (component is null)
         {
             _logger.LogWarning("Delete requested for component {ComponentId}, but it was not found.", id);
-            return false;
+            return null;
         }
 
         var isInOrder = await _context.OrderBoardComponents
-            .Where(bc => bc.ComponentId == id)
-            .AnyAsync();
+            .AnyAsync(boardComponent => boardComponent.ComponentId == id)
+            || await _context.Set<BoardComponent>()
+                .AnyAsync(boardComponent => boardComponent.ComponentId == id);
 
         if (isInOrder)
         {
-            component.Status = ComponentStatus.Abandoned;
-            //component.Quantity = 0;
-            await _context.SaveChangesAsync();
-            return true;
+            _logger.LogWarning("Component {ComponentId} cannot be deleted because it is referenced by an order.", id);
+            return false;
         }
 
         var componentTypeId = component.ComponentTypeId;
@@ -112,39 +111,27 @@ public class ComponentRepository : IComponentRepository
         return true;
     }
 
-    public async Task<bool> DeleteTypeAsync(int id)
+    public async Task<bool?> DeleteTypeAsync(int id)
     {
         var componentType = await _context.ComponentTypes.FirstOrDefaultAsync(ct => ct.Id == id);
-        if (componentType is null)
+        var component = await _context.Components.FirstOrDefaultAsync(c=> c.Id == id);
+        if (componentType is null || component is null)
         {
-            return false;
+            _logger.LogWarning("Component was not found!");
+            return null;
         }
 
-        var components = await _context.Components
-            .Where(c => c.ComponentTypeId == id)
-            .ToListAsync();
-        var componentIds = components.Select(c => c.Id).ToList();
-        var isInOrder = await _context.OrderBoardComponents
-            .Where(bc => componentIds.Contains(bc.ComponentId))
-            .AnyAsync();
+        var isInOrder = await _context.OrderBoardComponents.AnyAsync(obc=> obc.ComponentId == id);
 
         if (isInOrder)
         {
-            foreach (var component in components)
-            {
-                component.Status = ComponentStatus.Abandoned;
-                component.Quantity = 0;
-            }
-
-            await _context.SaveChangesAsync();
-            return true;
+            _logger.LogWarning("Cannot delete Component (id: {id}) because it is related to an Order", id);
+            return false;
         }
 
-        var assignments = await _context.OrderBoardComponents
-            .Where(bc => componentIds.Contains(bc.ComponentId))
-            .ToListAsync();
-        _context.OrderBoardComponents.RemoveRange(assignments);
-        _context.Components.RemoveRange(components);
+        _logger.LogInformation("Componant and its Type was not related to any Order and can be deleted");
+
+        _context.Components.Remove(component);
         _context.ComponentTypes.Remove(componentType);
         await _context.SaveChangesAsync();
         return true;

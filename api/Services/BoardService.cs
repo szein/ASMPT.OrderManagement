@@ -1,4 +1,6 @@
+#nullable disable
 using core.Models;
+
 public class BoardService : IBoardService
 {
     private readonly IBoardRepository _boardRepository;
@@ -65,14 +67,18 @@ public class BoardService : IBoardService
         return updatedBoard;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool?> DeleteAsync(int id)
     {
-        _logger.LogInformation("Delete request received for board {BoardId}.", id);
+        _logger.LogInformation("Delete request received for board {id}.", id);
         var deleted = await _boardRepository.DeleteAsync(id);
-
-        if (!deleted)
+        if (deleted is null)
         {
-            _logger.LogWarning("Delete operation failed because board {BoardId} was not found.", id);
+            _logger.LogWarning("Delete operation failed because board {id} was not found.", id);
+        }
+
+        if (deleted.Value)
+        {
+            _logger.LogWarning("Board {id} cannot be deleted because it is referenced by an order", id);
         }
 
         return deleted;

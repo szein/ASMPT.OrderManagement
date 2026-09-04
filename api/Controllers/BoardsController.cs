@@ -1,7 +1,5 @@
+#nullable disable
 using Microsoft.AspNetCore.Mvc;
-using core.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
-using SQLitePCL;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -163,10 +161,18 @@ public class BoardsController : ControllerBase
         {
             var deleted = await _boardService.DeleteAsync(id);
 
-            if (!deleted)
+            if (!deleted is null)
             {
                 _logger.LogWarning("Delete failed because board {BoardId} was not found.", id);
                 return NotFound();
+            }
+            if (!deleted.Value)
+            {
+                return StatusCode(StatusCodes.Status406NotAcceptable, new ProblemDetails
+                {
+                    Status = StatusCodes.Status406NotAcceptable,
+                    Title = "Boardcannot be deleted because it is referenced by an order"
+                });
             }
 
             _logger.LogInformation("Board {BoardId} deleted successfully.", id);

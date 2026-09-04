@@ -2,14 +2,12 @@ using core.Models;
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepository;
-    private readonly IOrderStatusService _orderStatusService;
     private readonly ILogger<OrderService> _logger;
 
-    public OrderService(IOrderRepository orderRepository, ILogger<OrderService> logger, IOrderStatusService? orderStatusService = null)
+    public OrderService(IOrderRepository orderRepository, ILogger<OrderService> logger)
     {
         _orderRepository = orderRepository;
         _logger = logger;
-        _orderStatusService = orderStatusService ?? new OrderStatusService();
     }
 
     public async Task<List<Order>> GetAllAsync()
@@ -69,8 +67,6 @@ public class OrderService : IOrderService
             return null;
         }
 
-        _orderStatusService.EnsureCanEdit(existingOrder);
-
         existingOrder.Name = name.Trim();
         existingOrder.Description = description.Trim();
         existingOrder.OrderDate = orderDate;
@@ -89,7 +85,7 @@ public class OrderService : IOrderService
             return false;
         }
 
-        _orderStatusService.EnsureCanDelete(order);
+        if(order.Status != OrderStatus.Pending) return false;
         var deleted = await _orderRepository.DeleteAsync(id);
 
         if (!deleted)

@@ -1,4 +1,4 @@
-using core.Models;
+#nullable disable
 
 public class ComponentService : IComponentService
 {
@@ -92,14 +92,14 @@ public class ComponentService : IComponentService
         _logger.LogInformation("Available quantity for component type {ComponentTypeId} is {AvailableQuantity}.", resolvedComponentTypeId, availableQuantity);
         return availableQuantity;
     }
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool?> DeleteAsync(int id)
     {
         _logger.LogInformation("Delete request received for component {ComponentId}.", id);
         var deleted = await _componentRepository.DeleteAsync(id);
 
-        if (!deleted)
+        if (!deleted.Value)
         {
-            _logger.LogWarning("Delete operation failed because component {ComponentId} was not found.", id);
+            _logger.LogWarning("Component {id} cannot be deleted because it is referenced by an order.", id);
         }
 
         return deleted;

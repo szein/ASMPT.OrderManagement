@@ -66,7 +66,7 @@ public class BoardRepository : IBoardRepository
         return board;
     }
     
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool?> DeleteAsync(int id)
     {
         _logger.LogInformation("Attempting to delete board {BoardId}.", id);
 
@@ -74,6 +74,17 @@ public class BoardRepository : IBoardRepository
         if (board is null)
         {
             _logger.LogWarning("Delete requested for board {BoardId}, but it was not found.", id);
+            return null;
+        }
+
+        var isInOrder = await _context.OrderBoards
+            .AnyAsync(orderBoard => orderBoard.BoardId == id)
+            || await _context.Set<BoardComponent>()
+                .AnyAsync(boardComponent => boardComponent.BoardId == id);
+
+        if (isInOrder)
+        {
+            _logger.LogWarning("Board {BoardId} cannot be deleted because it is referenced by an order.", id);
             return false;
         }
 

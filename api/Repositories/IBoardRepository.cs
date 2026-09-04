@@ -24,5 +24,5 @@ public interface IBoardRepository
     /// <summary>Deletes a board by its ID.
     /// </summary>
     /// <returns></returns>
-    Task<bool> DeleteAsync(int id);
+    Task<bool?> DeleteAsync(int id);
 }

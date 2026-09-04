@@ -38,17 +38,6 @@ public class ComponentsController : ControllerBase
         catch (Exception ex) { return HandleException(ex, $"GetTypeById({id})"); }
     }
 
-    [HttpDelete("types/{id:int}")]
-    public async Task<IActionResult> DeleteType(int id)
-    {
-        try
-        {
-            var deleted = await _componentTypeService.DeleteAsync(id);
-            return deleted ? NoContent() : NotFound();
-        }
-        catch (Exception ex) { return HandleException(ex, $"DeleteType({id})"); }
-    }
-
     [HttpGet]
     public async Task<ActionResult<List<Component>>> GetAll()
     {
@@ -141,10 +130,20 @@ public class ComponentsController : ControllerBase
         {
             var deleted = await _componentService.DeleteAsync(id);
 
-            if (!deleted)
+            if (deleted is null)
             {
                 _logger.LogWarning("Delete failed because component {ComponentId} was not found.", id);
                 return NotFound();
+            }
+
+            if(!deleted.Value)
+            {
+                _logger.LogWarning("Component {id} cannot be deleted because it is referenced by an order", id);
+                return StatusCode(StatusCodes.Status406NotAcceptable, new ProblemDetails
+                {
+                    Status = StatusCodes.Status406NotAcceptable,
+                    Title = "Component cannot be deleted because it is referenced by an order."
+                });
             }
 
             _logger.LogInformation("Component {ComponentId} deleted successfully.", id);
