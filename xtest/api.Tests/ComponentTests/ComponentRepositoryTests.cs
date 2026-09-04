@@ -10,7 +10,7 @@ public class ComponentRepositoryTests
 
 
     [Fact]
-    public async Task DeleteAsync_Abandons_Ordered_Component_And_Removes_Uncommitted_Component_And_Type()
+    public async Task DeleteAsync_Does_Not_Delete_Ordered_Component_And_Removes_Uncommitted_Component_And_Type()
     {
         await using var context = new DbContextFactory().CreateFakeDbContext();
         var orderedType = new ComponentType { Id = 1, Name = "Ordered", Description = "Ordered component" };
@@ -31,13 +31,13 @@ public class ComponentRepositoryTests
 
         var repository = new ComponentRepository(context, A.Fake<ILogger<ComponentRepository>>());
 
-        Assert.True(await repository.DeleteAsync(orderedComponent.Id));
+        Assert.False(await repository.DeleteAsync(orderedComponent.Id));
         Assert.True(await repository.DeleteAsync(removableComponent.Id));
 
-        var abandoned = await context.Components.SingleOrDefaultAsync(c => c.Id == orderedComponent.Id);
-        Assert.NotNull(abandoned);
-        Assert.Equal(ComponentStatus.Abandoned, abandoned.Status);
-        Assert.Equal(0, abandoned.Quantity);
+        var ordered = await context.Components.SingleOrDefaultAsync(c => c.Id == orderedComponent.Id);
+        Assert.NotNull(ordered);
+        Assert.Equal(10, ordered.Quantity);
+        Assert.NotEqual(ComponentStatus.Abandoned, ordered.Status);
         Assert.Null(await context.Components.SingleOrDefaultAsync(c => c.Id == removableComponent.Id));
         Assert.Null(await context.ComponentTypes.SingleOrDefaultAsync(ct => ct.Id == removableType.Id));
     }
