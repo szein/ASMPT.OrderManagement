@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using core.Models;
+using Microsoft.AspNetCore.Authorization;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase

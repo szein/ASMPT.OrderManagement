@@ -1,6 +1,9 @@
 #nullable disable
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Web.Resource;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class BoardsController : ControllerBase
@@ -62,6 +65,7 @@ public class BoardsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "WriterApiScope")]
     public async Task<ActionResult<Board>> GetById(int id)
     {
         _logger.LogInformation("GET /api/boards/{BoardId} requested.", id);
@@ -171,7 +175,7 @@ public class BoardsController : ControllerBase
                 return StatusCode(StatusCodes.Status406NotAcceptable, new ProblemDetails
                 {
                     Status = StatusCodes.Status406NotAcceptable,
-                    Title = "Boardcannot be deleted because it is referenced by an order"
+                    Title = "Board cannot be deleted because it is referenced by an order"
                 });
             }
 

@@ -23,7 +23,7 @@ public class BoardService : IBoardService
         return await _boardRepository.GetComponentsAsync(boardId);
     }
 
-    public async Task<Board?> GetByIdAsync(int id)
+    public async Task<Board> GetByIdAsync(int id)
     {
         _logger.LogInformation("Service request received to fetch board {BoardId}.", id);
         return await _boardRepository.GetByIdAsync(id);
@@ -46,7 +46,7 @@ public class BoardService : IBoardService
         return createdBoard;
     }
 
-    public async Task<Board?> UpdateAsync(int id, string name, string description, double length, double width)
+    public async Task<Board> UpdateAsync(int id, string name, string description, double length, double width)
     {
         _logger.LogInformation("Updating board {BoardId}.", id);
 

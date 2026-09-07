@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 public class AppDbContext : IdentityDbContext<IdentityUser>
 {
     // private readonly ICurrentUserService _currentUserService; // Service to get logged-in user
+    private readonly IUserContext _userContext;
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderBoard> OrderBoards { get; set; }
     public DbSet<OrderBoardComponent> OrderBoardComponents { get; set; }
@@ -12,7 +13,12 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Component> Components { get; set; }
     public DbSet<ComponentType> ComponentTypes { get; set; }
 
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)    {    }
+    public AppDbContext(
+        DbContextOptions<AppDbContext> options,
+        IUserContext userContext) : base(options)
+    {
+        _userContext = userContext;
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,12 +58,12 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             if (entry.State == EntityState.Added)
             {
                 entry.Entity.CreatedAt = DateTime.UtcNow;
-                //entry.Entity.CreatedBy = _currentUserService.UserId;
+                entry.Entity.CreatedBy = _userContext?.UserId ?? "";
             }
             else if (entry.State == EntityState.Modified)
             {
                 entry.Entity.LastModifiedAt = DateTime.UtcNow;
-                //entry.Entity.LastModifiedBy = _currentUserService.UserId;
+                entry.Entity.LastModifiedBy = _userContext?.UserId ?? "";
             }
         }
 

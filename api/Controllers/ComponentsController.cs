@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using core.Models;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Identity.Web.Resource;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ComponentsController : ControllerBase
@@ -39,6 +42,8 @@ public class ComponentsController : ControllerBase
     }
 
     [HttpGet]
+    // [RequiredScope("user_access")]
+    [Authorize(Policy = "ReaderApiScope")]
     public async Task<ActionResult<List<Component>>> GetAll()
     {
         _logger.LogInformation("GET /api/components requested.");
@@ -52,6 +57,7 @@ public class ComponentsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [RequiredScope("ReaderApiScope")]
     public async Task<ActionResult<Component>> GetById(int id)
     {
         _logger.LogInformation("GET /api/components/{ComponentId} requested.", id);
@@ -71,6 +77,7 @@ public class ComponentsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "WriterApiScope")]
     public async Task<ActionResult<Component>> Create([FromBody] CreateComponentRequest request)
     {
         _logger.LogInformation("POST /api/components requested for component type {ComponentTypeName}.", request?.Name);

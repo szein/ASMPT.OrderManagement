@@ -22,7 +22,7 @@ public class ComponentService : IComponentService
         return await _componentRepository.GetAllAsync();
     }
 
-    public async Task<Component?> GetByIdAsync(int id)
+    public async Task<Component> GetByIdAsync(int id)
     {
         _logger.LogInformation("Service request received to fetch component {ComponentId}.", id);
         return await _componentRepository.GetByIdAsync(id);
@@ -50,7 +50,7 @@ public class ComponentService : IComponentService
         return createdComponent;
     }
 
-    public async Task<Component?> UpdateAsync(int id, string name, string description, int quantity)
+    public async Task<Component> UpdateAsync(int id, string name, string description, int quantity)
     {
         _logger.LogInformation("Updating component {ComponentId}.", id);
 
@@ -71,7 +71,7 @@ public class ComponentService : IComponentService
         return updatedComponent;
     }
 
-    public async Task<int> GetAvailableQuantityAsync(int? componentTypeId, ComponentType? componentType)
+    public async Task<int> GetAvailableQuantityAsync(int? componentTypeId, ComponentType componentType)
     {
         _logger.LogInformation("Fetching available quantity for component type {ComponentTypeId}.", componentTypeId ?? componentType?.Id);
 
