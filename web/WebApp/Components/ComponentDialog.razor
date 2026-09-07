@@ -2,7 +2,7 @@
 @using Radzen.Blazor
 @inject HttpClient http
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IExceptionHandler ExceptionHandler
 
 <RadzenTemplateForm TItem="ComponentForm" Data="form" Submit="@Save">
     <RadzenStack Gap="1rem">
@@ -69,17 +69,9 @@
             var savedComponent = await response.Content.ReadFromJsonAsync<Component>();
             DialogService.Close(savedComponent);
         }
-        catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        catch (Exception exception)
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Access Denied: You do not have permission to perform this action.");
-        }
-        catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            NotificationService.Notify(NotificationSeverity.Warning, "Access Denied: You do not Logged in.");
-        }
-        catch (HttpRequestException exception)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Components", $"Could not save component: {exception.Message}");
+            await ExceptionHandler.HandleAsync(exception, "Components", "save component");
         }
     }
 

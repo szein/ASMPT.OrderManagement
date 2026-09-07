@@ -4,7 +4,7 @@
 
 @inject HttpClient http
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IExceptionHandler ExceptionHandler
 @inject IAccessTokenProvider accessTokenProvider;
 @inject IAccessTokenProvider AuthorizationService
 
@@ -66,7 +66,7 @@
         }
         catch (Exception exception)
         {
-            ShowError($"Could not load boards: {exception.Message}");
+            await ExceptionHandler.HandleAsync(exception, "Boards", "load boards");
         }
     }
 
@@ -133,12 +133,7 @@ DialogOptions
         }
         catch (Exception exception)
         {
-            ShowError($"Could not delete board: {exception.Message}");
+            await ExceptionHandler.HandleAsync(exception, "Boards", "delete board");
         }
-    }
-
-    private void ShowError(string message)
-    {
-        NotificationService.Notify(NotificationSeverity.Error, "Boards", message);
     }
 }

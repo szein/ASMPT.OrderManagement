@@ -19,8 +19,7 @@ builder.Services.AddHttpClient("ASMPT_API", client =>
               authorizedUrls: new[] { builder.Configuration["ApiSettings:BaseUrl"] },
               scopes: new[] { builder.Configuration["ApiSettings:Scopes"] }
             )
-    )
-    .AddHttpMessageHandler<CustomHttpHandler>();
+        );
 
 builder.Services.AddMsalAuthentication<RemoteAuthenticationState, CustomUserAccount>(options =>
 {
@@ -30,7 +29,7 @@ builder.Services.AddMsalAuthentication<RemoteAuthenticationState, CustomUserAcco
 }).AddAccountClaimsPrincipalFactory<RemoteAuthenticationState, CustomUserAccount, CustomAccountFactory>();
 
 builder.Services.AddScoped<NotificationService>();
-builder.Services.AddScoped<CustomHttpHandler>();
+builder.Services.AddScoped<IExceptionHandler, ExceptionHandler>();
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("ASMPT_API"));
 
 builder.Services.AddRadzenComponents();

@@ -2,7 +2,7 @@
 @using core.Models
 @inject HttpClient http
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IExceptionHandler ExceptionHandler
 
 <RadzenStack Gap="1rem">
     <RadzenText TextStyle="TextStyle.H4">Components</RadzenText>
@@ -52,14 +52,12 @@
         }
         catch (Exception exception)
         {
-            ShowError($"Could not load components: {exception.Message}");
+            await ExceptionHandler.HandleAsync(exception, "Components", "load components");
         }
     }
 
     private async Task OpenAddDialog()
     {
-        @* try
-        { *@
         var result = await DialogService.OpenAsync<ComponentDialog>("Add New Component", null, new DialogOptions
         {
             Width = "500px",
@@ -72,18 +70,6 @@
             await LoadComponents();
             await componentsGrid!.Reload();
         }
-        @* }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Error",
-                Detail = "Unable to save changes: " + ex.Message
-            });
-        } *@
-
-        
     }
 
     private async Task OpenEditDialog(Component component)
@@ -130,13 +116,8 @@
         }
         catch (Exception exception)
         {
-            ShowError($"Could not delete component: {exception.Message}");
+            await ExceptionHandler.HandleAsync(exception, "Components", "delete component");
         }
-    }
-
-    private void ShowError(string message)
-    {
-        NotificationService.Notify(NotificationSeverity.Error, "Components", message);
     }
 
     private BadgeStyle GetComponentStatusChipStyle(ComponentStatus status) => status switch

@@ -2,7 +2,7 @@
 @using Radzen.Blazor
 @inject HttpClient http
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IExceptionHandler ExceptionHandler
 
 <RadzenSteps ShowStepsButtons="false" @bind-SelectedIndex="wizardStep">
     <Steps>
@@ -111,7 +111,7 @@
         }
         catch (Exception exception)
         {
-            NotificationService.Notify(NotificationSeverity.Error, $"Could not load boards: {exception.Message}");
+            await ExceptionHandler.HandleAsync(exception, "Orders", "load boards and components");
         }
     }
 
@@ -182,7 +182,7 @@
         }
         catch (Exception exception)
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Orders", $"Could not save order: {exception.Message}");
+            await ExceptionHandler.HandleAsync(exception, "Orders", "save order");
         }
     }
 }

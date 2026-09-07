@@ -7,6 +7,7 @@
 @inject HttpClient http;
 @inject IAccessTokenProvider AuthorizationService
 @inject DialogService DialogService;
+@inject IExceptionHandler ExceptionHandler
 
 <style>
     .wrap-cell {
@@ -140,7 +141,7 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading orders: {ex.Message}");
+            await ExceptionHandler.HandleAsync(ex, "Orders", "load orders");
             orders = new List<Order>() { 
                 new Order() { Name = "Test Order", Description = "This is a test data", OrderDate = DateTime.Now, Status = OrderStatus.Pending },
                 new Order() { Name = "Sample Order", Description = "This is a sample test order", OrderDate = DateTime.Now.AddDays(-1), Status = OrderStatus.Created },
@@ -157,19 +158,33 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
 
     private async Task LoadBoards(Order order)
     {
-        if (!boardsByOrder.ContainsKey(order.Id))
+        try
         {
-            boardsByOrder[order.Id] = await http.GetFromJsonAsync<List<Board>>($"orders/{order.Id}/boards") ?? [];
+            if (!boardsByOrder.ContainsKey(order.Id))
+            {
+                boardsByOrder[order.Id] = await http.GetFromJsonAsync<List<Board>>($"orders/{order.Id}/boards") ?? [];
+            }
+        }
+        catch (Exception exception)
+        {
+            await ExceptionHandler.HandleAsync(exception, "Orders", "load order boards");
         }
     }
 
     private async Task LoadComponents(Order order, Board board)
     {
-        var key = (order.Id, board.Id);
-        if (!componentsByBoard.ContainsKey(key))
+        try
         {
-            componentsByBoard[key] = await http.GetFromJsonAsync<List<BoardComponentRow>>(
-                $"orders/{order.Id}/boards/{board.Id}/components") ?? [];
+            var key = (order.Id, board.Id);
+            if (!componentsByBoard.ContainsKey(key))
+            {
+                componentsByBoard[key] = await http.GetFromJsonAsync<List<BoardComponentRow>>(
+                    $"orders/{order.Id}/boards/{board.Id}/components") ?? [];
+            }
+        }
+        catch (Exception exception)
+        {
+            await ExceptionHandler.HandleAsync(exception, "Orders", "load board components");
         }
     }
 
@@ -187,8 +202,15 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
 
         if (result is Order)
         {
-            orders = await http.GetFromJsonAsync<List<Order>>("orders") ?? [];
-            await ordersGrid.Reload();
+            try
+            {
+                orders = await http.GetFromJsonAsync<List<Order>>("orders") ?? [];
+                await ordersGrid.Reload();
+            }
+            catch (Exception exception)
+            {
+                await ExceptionHandler.HandleAsync(exception, "Orders", "refresh orders");
+            }
         }
     }
 
