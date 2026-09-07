@@ -6,30 +6,38 @@
 
 <RadzenTemplateForm TItem="Board" Data="board" Submit="@Save">
     <RadzenStack Gap="1rem">
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-            <RadzenLabel Text="Name" Style="width:7rem" />
-            <RadzenTextBox @bind-Value="board.Name" Name="BoardName" Placeholder="Board name" Style="flex:1" />
-        </RadzenStack>
-        <RadzenRequiredValidator Component="BoardName" Text="Name is required" Popup="true" />
+        <RadzenFormField Name="BoardName" Text="Name" Variant="Variant.Outlined">
+            <RadzenTextBox @bind-Value="board.Name" Name="BoardName" Placeholder="Board name" Style="width:100%" />
+        </RadzenFormField>
+        <RadzenRequiredValidator Component="BoardName" Text="Name is required" />
 
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Start" Gap="1rem">
-            <RadzenLabel Text="Description" Style="width:7rem" />
-            <RadzenTextArea @bind-Value="board.Description" Name="BoardDescription" Placeholder="Description" Style="flex:1" />
-        </RadzenStack>
+        <RadzenFormField Text="Description" Variant="Variant.Outlined">
+            <RadzenTextArea @bind-Value="board.Description" Name="BoardDescription" Placeholder="Description"
+                            Style="width:100%" />
+        </RadzenFormField>
+        
+        <RadzenFormField Name="BoardLength" Text="Length" Variant="Variant.Outlined" Style="flex:1">
+            <ChildContent>
+                <RadzenNumeric TValue="decimal" @bind-Value="length" Name="BoardLength" Placeholder="Length" Min="0.01m" Style="width:100%" />            </ChildContent>
+            <End>
+                <RadzenChip Text="mm" Variant="Variant.Outlined" ChipStyle="BadgeStyle.Base" />
+            </End>
+        </RadzenFormField>
 
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-            <RadzenLabel Text="Length" Style="width:7rem" />
-            <RadzenNumeric TValue="decimal" @bind-Value="length" Name="BoardLength" Placeholder="Length" Min="0.01m" Style="flex:1" />
-            <RadzenText Text="mm" />
-        </RadzenStack>
-        <RadzenNumericRangeValidator Component="BoardLength" Min="0.01" Text="Length must be greater than zero" Popup="true" />
+        <RadzenNumericRangeValidator Component="BoardLength" Min="0.01" Text="Length must be greater than zero"/>
 
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-            <RadzenLabel Text="Width" Style="width:7rem" />
-            <RadzenNumeric TValue="decimal" @bind-Value="width" Name="BoardWidth" Placeholder="Width" Min="0.01m" Style="flex:1" />
-            <RadzenText Text="mm" />
-        </RadzenStack>
-        <RadzenNumericRangeValidator Component="BoardWidth" Min="0.01" Text="Width must be greater than zero" Popup="true" />
+        
+        <RadzenFormField Name="BoardWidth" Text="Width" Variant="Variant.Outlined" Style="flex:1">
+            <ChildContent>
+                <RadzenNumeric TValue="decimal" @bind-Value="width" Name="BoardWidth" Placeholder="Width" Min="0.01m" Style="width:100%" />
+            </ChildContent>
+            <End>
+                <RadzenChip Text="mm" Variant="Variant.Outlined" ChipStyle="BadgeStyle.Base" />
+            </End>
+        </RadzenFormField>
+
+        <RadzenNumericRangeValidator Component="BoardWidth" Min="0.01" Text="Width must be greater than zero"
+                                     />
 
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
             <RadzenButton Text="Cancel" Icon="close" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
@@ -67,8 +75,8 @@
         board.Length = (double)length;
         board.Width = (double)width;
 
-        try
-        {
+        @* try
+        { *@
             var payload = new
             {
                 board.Name,
@@ -83,12 +91,12 @@
 
             var savedBoard = await response.Content.ReadFromJsonAsync<Board>();
             DialogService.Close(savedBoard ?? board);
-        }
+        @* }
         catch (Exception exception)
         {
             var operation = board.Id == 0 ? "create" : "update";
             NotificationService.Notify(NotificationSeverity.Error, "Boards", $"Could not {operation} board: {exception.Message}");
-        }
+        } *@
     }
 
     private void Cancel()

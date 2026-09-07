@@ -1,0 +1,37 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Normal">
+            <RadzenProfileMenu>
+                <Template>
+                    <RadzenLabel Text=@($"{@context.User.Identity?.Name}") />
+                    <RadzenGravatar Email="user@example.com">
+                    </RadzenGravatar>
+                </Template>
+                <ChildContent>
+                    <RadzenProfileMenuItem Text="Logout" Click=@(() => BeginLogOut()) Icon="Logout"></RadzenProfileMenuItem>
+                </ChildContent>
+            </RadzenProfileMenu>
+            @* <RadzenLabel Text=@($"Welcome {@context.User.Identity?.Name} ") />
+            <RadzenButton Click=@(() => LoginClick()) Text="LogOut" ButtonStyle="ButtonStyle.Base" /> *@
+        </RadzenStack>
+    </Authorized>
+    <NotAuthorized>
+        <RadzenButton Click=@(() => BeginLogin()) Text="Login" ButtonStyle="ButtonStyle.Base" />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    public void BeginLogOut()
+    {
+        Navigation.NavigateToLogout("authentication/logout");
+    }
+
+    public void BeginLogin()
+    {
+        Navigation.NavigateToLogin($"authentication/login");
+    }
+}

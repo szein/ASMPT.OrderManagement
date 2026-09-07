@@ -1,6 +1,11 @@
+@inherits LayoutComponentBase
 @page "/orders"
 @using core.Models;
+
+
+@attribute [Authorize]
 @inject HttpClient http;
+@inject IAccessTokenProvider AuthorizationService
 @inject DialogService DialogService;
 
 <style>
@@ -15,7 +20,7 @@
 AllowAlternatingRows="false"
 AllowFiltering="true"
 AllowPaging="true"
-PageSize="5"
+PageSize="20"
 AllowSorting="true"
 ExpandMode="DataGridExpandMode.Multiple"
 RowExpand="@LoadBoards"
@@ -28,12 +33,12 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
     </HeaderTemplate>
     <Template Context="order">
         <RadzenDataGrid Data="@GetBoards(order)" TItem="Board"
-                        AllowPaging="true" PageSize="5" AllowSorting="true"
+                        AllowPaging="true" PageSize="10" AllowSorting="true"
                         ExpandMode="DataGridExpandMode.Single"
                         RowExpand="@(board => LoadComponents(order, board))" ColumnWidth="150px">
             <Template Context="board">
                     <RadzenDataGrid Data="@GetComponents(order, board)" TItem="BoardComponentRow"
-                                AllowPaging="true" PageSize="5" AllowSorting="true" ColumnWidth="150px">
+                                AllowPaging="true" PageSize="10" AllowSorting="true" ColumnWidth="150px">
                     <Columns>
                         <RadzenDataGridColumn Property="@nameof(BoardComponentRow.ComponentTypeName)" Title="Type" />
                         <RadzenDataGridColumn Property="@nameof(BoardComponentRow.Quantity)" Title="Quantity" />
@@ -95,6 +100,8 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
 </RadzenDataGrid>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; }
     RadzenDataGrid<Order> ordersGrid;
     IEnumerable<Order> orders;
     Order selectedOrder;
@@ -123,6 +130,12 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
         await base.OnInitializedAsync();
         try
         {
+            var state = await AuthenticationState;
+        var accessTokenResult = await AuthorizationService.RequestAccessToken();
+
+        accessTokenResult.TryGetToken(out var token);
+
+        http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Value);
             orders = await http.GetFromJsonAsync<List<Order>>("orders") ?? new List<Order>();
         }
         catch (Exception ex)

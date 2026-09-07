@@ -54,8 +54,8 @@
         }
         else
         {
-            <RadzenButton Text="Save draft" Icon="save" ButtonStyle="ButtonStyle.Secondary" Click="@SaveDraft"
-                          Disabled="@HasComponents" />
+            @* <RadzenButton Text="Save draft" Icon="save" ButtonStyle="ButtonStyle.Secondary" Click="@SaveDraft"
+                          Disabled="@HasComponents" /> *@
             <RadzenButton Text="Save" Icon="save" ButtonStyle="ButtonStyle.Success" Click="@Save" Disabled="@(!CanSave)" />
         }
     </RadzenStack>

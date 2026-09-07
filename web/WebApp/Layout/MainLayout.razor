@@ -1,4 +1,9 @@
-﻿@using Radzen;
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Radzen.Blazor
+@using WebApp.Auth
+@inject NavigationManager Navigation
 
 <HeadContent>
     <RadzenTheme Theme="material" />
@@ -6,24 +11,28 @@
 
 <RadzenLayout>
     <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Gap="0">
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
             <RadzenSidebarToggle Click="@(() => leftSidebarExpanded = !leftSidebarExpanded)" />
             <RadzenLabel Text="Header" />
         </RadzenStack>
+        <RadzenStack Orientation="Orientation.Horizontal" >
+            <Login />
+        </RadzenStack>
+        </RadzenStack>
+        
     </RadzenHeader>
-    <RadzenSidebar Position="SidebarPosition.Left" @bind-Expanded="@leftSidebarExpanded" Style="width: 200px;">
-        <RadzenPanelMenu class="sidebar-panel-menu">
-            <RadzenPanelMenuItem Text="Home" Path="home" Icon="home" />
-            <RadzenPanelMenuItem Text="Orders" Path="orders" Icon="receipt_long" />
-            <RadzenPanelMenuItem Text="Management" Icon="settings" class="management-menu-item">
-                <RadzenPanelMenuItem Text="Boards" Path="boards" Icon="developer_board" />
-                <RadzenPanelMenuItem Text="Components" Path="components" Icon="memory" />
-            </RadzenPanelMenuItem>
-        </RadzenPanelMenu>
-    </RadzenSidebar>
+    <NavMenu />
     <RadzenBody>
         <div class="rz-p-4">
-            @Body
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    An Err occurred.
+                </ErrorContent>
+            </ErrorBoundary>
         </div>
     </RadzenBody>
 </RadzenLayout>
@@ -31,9 +40,26 @@
 <RadzenComponents />
 
 @code {
+    #nullable disable
+    ErrorBoundary _errorBoundary;
     bool leftSidebarExpanded = true;
-    bool rightSidebarExpanded = false;
 
-    [Parameter]
-    public RenderFragment? Body { get; set; }
+    @* [Parameter]
+    public RenderFragment? Body { get; set; } *@
+
+    @* protected override Task OnParametersSetAsync()
+    {
+        _errorBoundary?.Recover();
+        return base.OnParametersSetAsync();
+    } *@
+
+    private void BeginLogIn()
+    {
+        Navigation.NavigateToLogin("authentication/login");
+    }
+
+    private void BeginLogOut()
+    {
+        Navigation.NavigateToLogout("authentication/logout");
+    }
 }

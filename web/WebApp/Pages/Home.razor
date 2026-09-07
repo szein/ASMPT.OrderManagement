@@ -1,7 +1,18 @@
 ﻿@page "/"
+@inject IConfiguration Configuration
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+<p>API Base URL: @apiBaseUrl</p>
+
+@code{
+    private string apiBaseUrl;
+
+    protected override void OnInitialized()
+    {
+        apiBaseUrl = Configuration["ApiSettings:BaseUrl"];
+    } 
+}

@@ -1,29 +1,27 @@
 @using core.Models
+@using Radzen.Blazor
 @inject HttpClient http
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
 <RadzenTemplateForm TItem="ComponentForm" Data="form" Submit="@Save">
     <RadzenStack Gap="1rem">
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-            <RadzenLabel Text="Name" Style="width:7rem" />
-            <RadzenTextBox @bind-Value="form.Name" Name="ComponentName" Placeholder="Component name" Style="flex:1" />
-        </RadzenStack>
-        <RadzenRequiredValidator Component="ComponentName" Text="Name is required" Popup="true" />
+        <RadzenFormField Name="ComponentName" Text="Name" Variant="Variant.Outlined">
+            <RadzenTextBox @bind-Value="form.Name" Name="ComponentName" Placeholder="Component name"
+                           Style="width:100%" />
+        </RadzenFormField>
+        <RadzenRequiredValidator Component="ComponentName" Text="Name is required" />
 
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Start" Gap="1rem">
-            <RadzenLabel Text="Description" Style="width:7rem" />
-            <RadzenTextArea @bind-Value="form.Description" Name="ComponentDescription" Placeholder="Description" Style="flex:1" />
-        </RadzenStack>
+        <RadzenFormField Name="ComponentDescription" Text="Description" Variant="Variant.Outlined">
+            <RadzenTextArea @bind-Value="form.Description" Name="ComponentDescription" Placeholder="Description"
+                            Style="width:100%" />
+        </RadzenFormField>
 
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-            <RadzenLabel Text="Quantity" Style="width:7rem" />
-            <RadzenNumeric TValue="int" @bind-Value="form.Quantity" Name="Quantity"
-                       Disabled="@(!CanEditQuantity)" Min="1" Placeholder="Quantity" Style="width:100%" />
-            <RadzenNumericRangeValidator Component="Quantity" Min="1" Text="Quantity must be greater than zero" Popup="true" />
-        </RadzenStack>
-
-        
+        <RadzenFormField Name="Quantity" Text="Quantity" Variant="Variant.Outlined">
+            <RadzenNumeric TValue="int" @bind-Value="form.Quantity" Name="Quantity" Disabled="@(!CanEditQuantity)"
+                           Min="1" Placeholder="Quantity" Style="width:100%" />
+        </RadzenFormField>
+        <RadzenNumericRangeValidator Component="Quantity" Min="1" Text="Quantity must be greater than zero" />
 
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
             <RadzenButton Text="Cancel" Icon="close" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
@@ -71,7 +69,15 @@
             var savedComponent = await response.Content.ReadFromJsonAsync<Component>();
             DialogService.Close(savedComponent);
         }
-        catch (Exception exception)
+        catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Access Denied: You do not have permission to perform this action.");
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Access Denied: You do not Logged in.");
+        }
+        catch (HttpRequestException exception)
         {
             NotificationService.Notify(NotificationSeverity.Error, "Components", $"Could not save component: {exception.Message}");
         }

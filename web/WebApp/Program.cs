@@ -1,14 +1,38 @@
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using WebApp;
+using Microsoft.AspNetCore.Authorization;
+
 using Radzen;
+using WebApp;
+using WebApp.Models;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+builder.Services.AddHttpClient("ASMPT_API", client => 
+        client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"])
+    ).AddHttpMessageHandler(sp => 
+        sp.GetRequiredService<AuthorizationMessageHandler>()
+          .ConfigureHandler(
+              authorizedUrls: new[] { builder.Configuration["ApiSettings:BaseUrl"] },
+              scopes: new[] { builder.Configuration["ApiSettings:Scopes"] }
+            )
+    )
+    .AddHttpMessageHandler<CustomHttpHandler>();
+
+builder.Services.AddMsalAuthentication<RemoteAuthenticationState, CustomUserAccount>(options =>
+{
+     builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
+    options.ProviderOptions.DefaultAccessTokenScopes.Add("api://43353f78-34d4-4a75-86aa-07b8b11eaf8a/user_access");
+    options.ProviderOptions.LoginMode = "redirect";
+}).AddAccountClaimsPrincipalFactory<RemoteAuthenticationState, CustomUserAccount, CustomAccountFactory>();
+
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<CustomHttpHandler>();
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("ASMPT_API"));
 
 builder.Services.AddRadzenComponents();
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5054/api/") });
 
 await builder.Build().RunAsync();
