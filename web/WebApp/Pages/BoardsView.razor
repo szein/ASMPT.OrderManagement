@@ -1,18 +1,21 @@
 @inherits LayoutComponentBase
 @page "/boards"
 @using core.Models
+@attribute [Authorize]
 
 @inject HttpClient http
 @inject DialogService DialogService
 @inject IExceptionHandler ExceptionHandler
 @inject IAccessTokenProvider accessTokenProvider;
 @inject IAccessTokenProvider AuthorizationService
+@inject NotificationService NotificationService;
 
 
 <RadzenStack Gap="1rem">
     <RadzenText TextStyle="TextStyle.H4">Boards</RadzenText>
 
-    <RadzenDataGrid @ref="boardsGrid" Data="@boards" TItem="Board" AllowFiltering="true" AllowPaging="true"                    AllowSorting="true" PageSize="10" ColumnWidth="200px">
+    <RadzenDataGrid @ref="boardsGrid" Data="@boards" TItem="Board" AllowFiltering="true" AllowPaging="true"
+                    AllowSorting="true" PageSize="10" ColumnWidth="200px">
         <HeaderTemplate>
             <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle" Text="Add New Board"
                           Click="@OpenAddDialog" />
@@ -52,28 +55,25 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadBoards();
+    }
+
+    private async Task LoadBoards()
+    {
         try
         {
-            await base.OnInitializedAsync();
-            @* http.DefaultRequestHeaders.Add("Access-Control-Allow-Origin", "*"); *@
-            var state = await AuthenticationState;
-            var accessTokenResult = await AuthorizationService.RequestAccessToken();
-
-            accessTokenResult.TryGetToken(out var token);
-
-            http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Value);
             boards = await http.GetFromJsonAsync<List<Board>>("boards") ?? [];
         }
         catch (Exception exception)
         {
-            await ExceptionHandler.HandleAsync(exception, "Boards", "load boards");
+            await ExceptionHandler.HandleAsync(exception, "Components", "load components");
         }
     }
 
     private async Task OpenAddDialog()
     {
         var result = await DialogService.OpenAsync<BoardDialog>("Add New Board", new Dictionary<string, object>(), new
-DialogOptions
+        DialogOptions
         {
             Width = "500px",
             Resizable = false,

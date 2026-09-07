@@ -1,5 +1,6 @@
 @page "/components"
 @using core.Models
+@attribute [Authorize]
 @inject HttpClient http
 @inject DialogService DialogService
 @inject IExceptionHandler ExceptionHandler

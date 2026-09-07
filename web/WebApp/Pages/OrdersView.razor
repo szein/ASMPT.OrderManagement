@@ -2,10 +2,8 @@
 @page "/orders"
 @using core.Models;
 
-
 @attribute [Authorize]
 @inject HttpClient http;
-@inject IAccessTokenProvider AuthorizationService
 @inject DialogService DialogService;
 @inject IExceptionHandler ExceptionHandler
 
@@ -101,60 +99,35 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
 </RadzenDataGrid>
 
 @code {
-    [CascadingParameter]
-    private Task<AuthenticationState> AuthenticationState { get; set; }
+    @* [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } *@
     RadzenDataGrid<Order> ordersGrid;
     IEnumerable<Order> orders;
     Order selectedOrder;
     private readonly Dictionary<Guid, IList<Board>> boardsByOrder = new();
     private readonly Dictionary<(Guid OrderId, int BoardId), IList<BoardComponentRow>> componentsByBoard = new();
 
-
     DataGridEditMode editMode = DataGridEditMode.Single;
 
     List<Order> ordersToInsert = new List<Order>();
     List<Order> ordersToUpdate = new List<Order>();
-    void Reset()
-    {
-        ordersToInsert.Clear();
-        ordersToUpdate.Clear();
-    }
-
-    void Reset(Order order)
-    {
-        ordersToInsert.Remove(order);
-        ordersToUpdate.Remove(order);
-    }
-
+    
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-        try
-        {
-            var state = await AuthenticationState;
-        var accessTokenResult = await AuthorizationService.RequestAccessToken();
-
-        accessTokenResult.TryGetToken(out var token);
-
-        http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Value);
-            orders = await http.GetFromJsonAsync<List<Order>>("orders") ?? new List<Order>();
-        }
-        catch (Exception ex)
-        {
-            await ExceptionHandler.HandleAsync(ex, "Orders", "load orders");
-            orders = new List<Order>() { 
-                new Order() { Name = "Test Order", Description = "This is a test data", OrderDate = DateTime.Now, Status = OrderStatus.Pending },
-                new Order() { Name = "Sample Order", Description = "This is a sample test order", OrderDate = DateTime.Now.AddDays(-1), Status = OrderStatus.Created },
-            };
-        }   
-        
+        await LoadOrders();
     }
 
-    private IList<Board> GetBoards(Order order) =>
-        boardsByOrder.TryGetValue(order.Id, out var boards) ? boards : [];
-
-    private IList<BoardComponentRow> GetComponents(Order order, Board board) =>
-        componentsByBoard.TryGetValue((order.Id, board.Id), out var components) ? components : [];
+    private async Task LoadOrders()
+    {
+        try
+        {
+            orders = await http.GetFromJsonAsync<List<Order>>("orders") ?? new List<Order>();
+        }
+        catch (Exception exception)
+        {
+            await ExceptionHandler.HandleAsync(exception, "Components", "load components");
+        }
+    }
 
     private async Task LoadBoards(Order order)
     {
@@ -170,6 +143,12 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
             await ExceptionHandler.HandleAsync(exception, "Orders", "load order boards");
         }
     }
+
+    private IList<Board> GetBoards(Order order) =>
+        boardsByOrder.TryGetValue(order.Id, out var boards) ? boards : [];
+
+    private IList<BoardComponentRow> GetComponents(Order order, Board board) =>
+        componentsByBoard.TryGetValue((order.Id, board.Id), out var components) ? components : [];
 
     private async Task LoadComponents(Order order, Board board)
     {
@@ -189,6 +168,19 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
     }
 
     private sealed record BoardComponentRow(int ComponentId, string ComponentTypeName, int Quantity, ComponentStatus Status);
+
+
+    void Reset()
+    {
+        ordersToInsert.Clear();
+        ordersToUpdate.Clear();
+    }
+
+    void Reset(Order order)
+    {
+        ordersToInsert.Remove(order);
+        ordersToUpdate.Remove(order);
+    }
 
     async Task OpenOrderWizard()
     {
@@ -230,8 +222,6 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
     void OnUpdateRow(Order order)
     {
         Reset(order);
-
-        
     }
 
     async Task SaveRow(Order order)
@@ -283,5 +273,4 @@ Data="@orders" TItem="Order" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" S
         OrderStatus.Created   => BadgeStyle.Info,    // Blue
         _           => BadgeStyle.Primary  // Default blue
     };
-
 }

@@ -12,15 +12,15 @@
 <RadzenLayout>
     <RadzenHeader>
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Gap="0">
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenSidebarToggle Click="@(() => leftSidebarExpanded = !leftSidebarExpanded)" />
-            <RadzenLabel Text="Header" />
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+                <RadzenSidebarToggle Click="@(() => leftSidebarExpanded = !leftSidebarExpanded)" />
+                <RadzenLabel Text="Header" />
+            </RadzenStack>
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75">
+                <Login />
+            </RadzenStack>
         </RadzenStack>
-        <RadzenStack Orientation="Orientation.Horizontal" >
-            <Login />
-        </RadzenStack>
-        </RadzenStack>
-        
+
     </RadzenHeader>
     <NavMenu />
     <RadzenBody>
@@ -30,7 +30,7 @@
                     @Body
                 </ChildContent>
                 <ErrorContent>
-                    An Err occurred.
+                    An Error occurred.
                 </ErrorContent>
             </ErrorBoundary>
         </div>
@@ -40,7 +40,7 @@
 <RadzenComponents />
 
 @code {
-    #nullable disable
+#nullable disable
     ErrorBoundary _errorBoundary;
     bool leftSidebarExpanded = true;
 
