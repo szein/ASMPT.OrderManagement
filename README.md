@@ -18,3 +18,15 @@ If you want to learn more about creating good readme files then refer the follow
 - [ASP.NET Core](https://github.com/aspnet/Home)
 - [Visual Studio Code](https://github.com/Microsoft/vscode)
 - [Chakra Core](https://github.com/Microsoft/ChakraCore)
+
+# Run Api Container
+
+```
+ docker build -f api/Dockerfile -t my-api .
+
+ docker run --rm -d -p 8000:8080 --name api-test -t api
+
+ docker run --rm -d -p 8000:8080 -e ASPNETCORE_ENVIRONMENT=DEVELOPMENT --name api-dev -t api
+
+ # TODOs
+- Check CROS roles if there is need to change it. Now allowing "localhost:5168"

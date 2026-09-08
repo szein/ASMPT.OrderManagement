@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using FakeItEasy;
 
 public class DbContextFactory
 {
@@ -14,7 +15,7 @@ public class DbContextFactory
          .ConfigureWarnings(x => x.Ignore(InMemoryEventId.TransactionIgnoredWarning))
          .Options;
 
-        var context = new AppDbContext(options);
+        var context = new AppDbContext(options, A.Fake<IUserContext>());
 
         // Forces EF Core to initialize and build the Identity model
         context.Database.EnsureCreated();

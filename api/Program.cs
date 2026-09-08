@@ -25,28 +25,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
 
-//Authentication
+//MSLA Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
-// Use this to authenticate on API level
-// builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//     // .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
-//     .AddJwtBearer(options =>
-//     {
-        
-//         options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0";
-//         options.TokenValidationParameters.ValidAudience = builder.Configuration["AzureAd:ClientId"]; // or "api://<client-id>"
-//         options.TokenValidationParameters = new TokenValidationParameters
-//         {
-//             ValidateAudience = true,
-//             ValidAudience = builder.Configuration["AzureAd:ClientId"], // e.g. "your-app-client-id" or "api://your-app-client-id"
-//             ValidIssuers = new[]
-//             {
-//                 $"https://sts.windows.net/{builder.Configuration["AzureAd:TenantId"]}/",
-//                 $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0"
-//             }
-//         };
-//     });
 
 builder.Services.AddAuthorization(options =>
 {
@@ -55,11 +36,6 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("WriterApiScope", policy =>
         policy.RequireClaim("http://schemas.microsoft.com/identity/claims/scope", "admin_access"));
 });
-
-
-// builder.Services.AddIdentityApiEndpoints<IdentityUser>()
-//     .AddEntityFrameworkStores<AppDbContext>();
-// builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IUserContext, UserContext>();
 
@@ -99,12 +75,15 @@ await using (var scope = app.Services.CreateAsyncScope())
     }
 }
 
+//TODO: move the seeding to better place
 async Task SeedDatabaseAsync(AppDbContext dbContext)
 {
     var order1Id = Guid.NewGuid();
-    var order1BoardId = Guid.NewGuid();
     var order2Id = Guid.NewGuid();
+    var order3Id = Guid.NewGuid();
+    var order1BoardId = Guid.NewGuid();
     var order2BoardId = Guid.NewGuid();
+    var order3BoardId = Guid.NewGuid();
 
     dbContext.Boards.AddRange(
         new Board { Id = 1, Name = "Board 1", Description = "Description for Board 1", Length = 10.5, Width = 8.5 },
@@ -122,17 +101,22 @@ async Task SeedDatabaseAsync(AppDbContext dbContext)
     );
     dbContext.Orders.AddRange(
         new Order { Id = order1Id, Name = "Order 1", OrderDate = DateTime.UtcNow },
-        new Order { Id = order2Id, Name = "Order 2", OrderDate = DateTime.UtcNow }
+        new Order { Id = order2Id, Name = "Order 2", OrderDate = DateTime.UtcNow },
+        new Order { Id = order3Id, Name = "Order 3", OrderDate = DateTime.UtcNow, Status = OrderStatus.Completed },
+        new Order { Id = Guid.NewGuid(), Name = "Order 4", OrderDate = DateTime.UtcNow, Status = OrderStatus.Cancelled }
     );
     dbContext.OrderBoards.AddRange(
         new OrderBoard { Id = order1BoardId, OrderId = order1Id, BoardId = 1 },
-        new OrderBoard { Id = order2BoardId, OrderId = order2Id, BoardId = 2 }
+        new OrderBoard { Id = order2BoardId, OrderId = order2Id, BoardId = 2 },
+        new OrderBoard { Id = order3BoardId, OrderId = order3Id, BoardId = 2 }
     );
     dbContext.OrderBoardComponents.AddRange(
         new OrderBoardComponent { OrderBoardId = order1BoardId, ComponentId = 1, Quantity = 2 },
         new OrderBoardComponent { OrderBoardId = order1BoardId, ComponentId = 2, Quantity = 1 },
         new OrderBoardComponent { OrderBoardId = order2BoardId, ComponentId = 2, Quantity = 4 },
-        new OrderBoardComponent { OrderBoardId = order2BoardId, ComponentId = 3, Quantity = 3 }
+        new OrderBoardComponent { OrderBoardId = order2BoardId, ComponentId = 3, Quantity = 3 },
+        new OrderBoardComponent { OrderBoardId = order3BoardId, ComponentId = 1, Quantity = 5 },
+        new OrderBoardComponent { OrderBoardId = order3BoardId, ComponentId = 2, Quantity = 2 }
     );
 }
 
