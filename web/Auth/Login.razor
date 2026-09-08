@@ -1,18 +1,19 @@
 ﻿@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @inject NavigationManager Navigation
+@inject NotificationService NotificationService
 
 <AuthorizeView>
     <Authorized>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Normal">
-            <RadzenProfileMenu>
+            <RadzenProfileMenu Click="@BeginProfileMenuClick">
                 <Template>
                     <RadzenLabel Text=@($"{@context.User.Identity?.Name}") />
                     <RadzenGravatar Email="user@example.com">
                     </RadzenGravatar>
                 </Template>
                 <ChildContent>
-                    <RadzenProfileMenuItem Text="Logout" Click=@(() => BeginLogOut()) Icon="Logout"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="Logout" Value="logout" Icon="Logout"></RadzenProfileMenuItem>
                 </ChildContent>
             </RadzenProfileMenu>
             @* <RadzenLabel Text=@($"Welcome {@context.User.Identity?.Name} ") />
@@ -25,8 +26,15 @@
 </AuthorizeView>
 
 @code {
-    public void BeginLogOut()
+    private async Task BeginProfileMenuClick(RadzenProfileMenuItem item)
     {
+        if (item.Value?.ToString() != "logout")
+        {
+            return;
+        }
+
+        NotificationService.Notify(NotificationSeverity.Info, "Logging out", "You are being logged out!");
+        await Task.Delay(500);
         Navigation.NavigateToLogout("authentication/logout");
     }
 

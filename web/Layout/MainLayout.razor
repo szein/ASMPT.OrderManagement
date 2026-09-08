@@ -22,7 +22,7 @@
         </RadzenStack>
 
     </RadzenHeader>
-    <NavMenu />
+    <NavMenu SidebarExpanded=@leftSidebarExpanded/>
     <RadzenBody>
         <div class="rz-p-4">
             <ErrorBoundary @ref="_errorBoundary">
@@ -43,23 +43,5 @@
 #nullable disable
     ErrorBoundary _errorBoundary;
     bool leftSidebarExpanded = true;
-
-    @* [Parameter]
-    public RenderFragment? Body { get; set; } *@
-
-    @* protected override Task OnParametersSetAsync()
-    {
-        _errorBoundary?.Recover();
-        return base.OnParametersSetAsync();
-    } *@
-
-    private void BeginLogIn()
-    {
-        Navigation.NavigateToLogin("authentication/login");
-    }
-
-    private void BeginLogOut()
-    {
-        Navigation.NavigateToLogout("authentication/logout");
-    }
+    
 }

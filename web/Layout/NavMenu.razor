@@ -1,4 +1,4 @@
-﻿<RadzenSidebar Position="SidebarPosition.Left" @bind-Expanded="@leftSidebarExpanded" Style="width: 200px;">
+﻿<RadzenSidebar Position="SidebarPosition.Left" @bind-Expanded="@SidebarExpanded" Style="width: 200px;">
             <RadzenPanelMenu class="sidebar-panel-menu">
                 <RadzenPanelMenuItem Text="Home" Path="/" Icon="home" />
                 <AuthorizeView>
@@ -16,6 +16,6 @@
         </RadzenSidebar>
 @code
 {
-    
-    bool leftSidebarExpanded = true;
+    [Parameter]
+    public bool SidebarExpanded {get; set;}
 }
