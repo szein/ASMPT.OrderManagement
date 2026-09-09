@@ -71,4 +71,41 @@ public class OrderRepositoryTests
             Assert.Contains(result, o => o.Id == order.Id && o.Name == order.Name && o.Description == order.Description && o.OrderDate == order.OrderDate);
         }
     }
+
+    [Fact]
+    public async Task GetExportDataAsync_Returns_Order_With_Boards_And_Components()
+    {
+        await using var context = _dbContextFactory.CreateFakeDbContext();
+        var componentType = new ComponentType { Id = 1, Name = "Type 1" };
+        var component = new Component { Id = 1, ComponentTypeId = 1, ComponentType = componentType, Quantity = 5 };
+        var board = new Board { Id = 1, Name = "Board 1", Description = "Board description", Length = 10, Width = 20 };
+        var order = new Order { Id = Guid.NewGuid(), Name = "Order 1", OrderDate = new DateTime(2026, 9, 1) };
+        var orderBoard = new OrderBoard { OrderId = order.Id, BoardId = board.Id };
+
+        context.ComponentTypes.Add(componentType);
+        context.Components.Add(component);
+        context.Boards.Add(board);
+        context.Orders.Add(order);
+        context.OrderBoards.Add(orderBoard);
+        context.OrderBoardComponents.Add(new OrderBoardComponent
+        {
+            OrderBoardId = orderBoard.Id,
+            ComponentId = component.Id,
+            Quantity = 2
+        });
+        await context.SaveChangesAsync();
+
+        var repository = new OrderRepository(context, A.Fake<ILogger<OrderRepository>>());
+
+        var result = await repository.GetExportDataAsync(order.Id);
+
+        Assert.NotNull(result);
+        Assert.Equal(order.Id, result.Id);
+        var exportedBoard = Assert.Single(result.Boards);
+        Assert.Equal(board.Name, exportedBoard.Name);
+        var exportedComponent = Assert.Single(exportedBoard.Components);
+        Assert.Equal(component.Id, exportedComponent.Id);
+        Assert.Equal(componentType.Name, exportedComponent.ComponentTypeName);
+        Assert.Equal(2, exportedComponent.Quantity);
+    }
 }

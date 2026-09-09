@@ -32,6 +32,12 @@ public class OrderService : IOrderService
         return await _orderRepository.GetByIdAsync(id);
     }
 
+    public async Task<OrderExportResponse?> GetExportDataAsync(Guid id)
+    {
+        _logger.LogInformation("Service request received to fetch export data for order {OrderId}.", id);
+        return await _orderRepository.GetExportDataAsync(id);
+    }
+
     public async Task<Order> CreateAsync(CreateOrderRequest request)
     {
         _logger.LogInformation("Creating a new order with name {OrderName} and date {OrderDate}.", request.Name, request.OrderDate);

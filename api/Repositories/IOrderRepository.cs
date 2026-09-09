@@ -24,7 +24,28 @@ public interface IOrderRepository
     /// <param name="id"></param>
     /// <returns></returns>
     Task<Order?> GetByIdAsync(Guid id);
+    /// <summary>
+    /// Get Order data to be exported (as json)
+    /// </summary>
+    /// <param name="id">Order id</param>
+    /// <returns></returns>
+    Task<OrderExportResponse?> GetExportDataAsync(Guid id);
+    /// <summary>
+    /// Add Order to the database
+    /// </summary>
+    /// <param name="order"></param>
+    /// <returns></returns>
     Task<Order> AddAsync(Order order);
+    /// <summary>
+    /// Update an Order 
+    /// </summary>
+    /// <param name="order"></param>
+    /// <returns></returns>
     Task<Order> UpdateAsync(Order order);
+    /// <summary>
+    /// Delete an Order by its id
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     Task<bool> DeleteAsync(Guid id);
 }

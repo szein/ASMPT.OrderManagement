@@ -26,11 +26,30 @@ public interface IOrderService
     /// <returns></returns>
     Task<Order?> GetByIdAsync(Guid id);
     /// <summary>
+    /// Get order realted data from repository 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    Task<OrderExportResponse?> GetExportDataAsync(Guid id);
+    /// <summary>
     /// Create new Order with its Boards and Components
     /// </summary>
     /// <param name="request">A DTO that holds the order, boards and componants data</param>
     /// <returns></returns>
     Task<Order> CreateAsync(CreateOrderRequest request);
+    /// <summary>
+    /// Update the order data (name, description and order data)
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="name"></param>
+    /// <param name="description"></param>
+    /// <param name="orderDate"></param>
+    /// <returns></returns>
     Task<Order?> UpdateAsync(Guid id, string name, string description, DateTime orderDate);
+    /// <summary>
+    /// Delete Order by its id
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     Task<bool> DeleteAsync(Guid id);
 }

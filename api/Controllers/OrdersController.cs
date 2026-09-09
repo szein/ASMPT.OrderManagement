@@ -75,6 +75,25 @@ public class OrdersController : ControllerBase
         catch (Exception ex) { return HandleException(ex, $"GetById({id})"); }
     }
 
+    [HttpGet("{id:guid}/export")]
+    public async Task<ActionResult<OrderExportResponse>> Export(Guid id)
+    {
+        _logger.LogInformation("GET /api/orders/{OrderId}/export requested.", id);
+        try
+        {
+            var order = await _orderService.GetExportDataAsync(id);
+            if (order is null)
+            {
+                _logger.LogWarning("Order export requested for missing order {OrderId}.", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Order export for {OrderId} returned successfully.", id);
+            return Ok(order);
+        }
+        catch (Exception ex) { return HandleException(ex, $"Export({id})"); }
+    }
+
     [HttpPost]
     public async Task<ActionResult<Order>> Create([FromBody] CreateOrderRequest request)
     {

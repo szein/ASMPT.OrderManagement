@@ -54,6 +54,50 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 
+    public async Task<OrderExportResponse?> GetExportDataAsync(Guid id)
+    {
+        _logger.LogInformation("Fetching export data for order {OrderId}.", id);
+
+        var order = await _context.Orders
+            .Include(o => o.OrderBoards)
+                .ThenInclude(orderBoard => orderBoard.Board)
+            .Include(o => o.OrderBoards)
+                .ThenInclude(orderBoard => orderBoard.OrderBoardComponents)
+                    .ThenInclude(orderBoardComponent => orderBoardComponent.Component)
+                        .ThenInclude(component => component.ComponentType)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order is null)
+        {
+            return null;
+        }
+
+        return new OrderExportResponse(
+            order.Id,
+            order.Name,
+            order.Description,
+            order.OrderDate,
+            order.Status,
+            order.OrderBoards
+                .OrderBy(orderBoard => orderBoard.BoardId)
+                .Select(orderBoard => new OrderExportBoard(
+                    orderBoard.Board.Id,
+                    orderBoard.Board.Name,
+                    orderBoard.Board.Description,
+                    orderBoard.Board.Length,
+                    orderBoard.Board.Width,
+                    orderBoard.OrderBoardComponents
+                        .OrderBy(component => component.ComponentId)
+                        .Select(component => new OrderExportComponent(
+                            component.ComponentId,
+                            component.Component.ComponentType?.Name ?? string.Empty,
+                            component.Quantity,
+                            component.Component.Status))
+                        .ToList()))
+                .ToList());
+    }
+
     public async Task<Order> AddAsync(Order order)
     {
         _logger.LogInformation("Adding new order named {OrderName} for date {OrderDate}.", order.Name, order.OrderDate);
