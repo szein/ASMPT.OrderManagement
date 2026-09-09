@@ -23,10 +23,11 @@ builder.Services.AddHttpClient("ASMPT_API", client =>
 
 builder.Services.AddMsalAuthentication<RemoteAuthenticationState, CustomUserAccount>(options =>
 {
-     builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
-    options.ProviderOptions.DefaultAccessTokenScopes.Add("api://43353f78-34d4-4a75-86aa-07b8b11eaf8a/user_access");
-    options.ProviderOptions.LoginMode = "redirect";
-}).AddAccountClaimsPrincipalFactory<RemoteAuthenticationState, CustomUserAccount, CustomAccountFactory>();
+    builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
+        options.ProviderOptions.DefaultAccessTokenScopes.Add("api://43353f78-34d4-4a75-86aa-07b8b11eaf8a/user_access");
+        options.ProviderOptions.DefaultAccessTokenScopes.Add("api://43353f78-34d4-4a75-86aa-07b8b11eaf8a/admin_access");
+        options.ProviderOptions.LoginMode = "redirect";
+    }).AddAccountClaimsPrincipalFactory<RemoteAuthenticationState, CustomUserAccount, CustomAccountFactory>();
 
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<IExceptionHandler, ExceptionHandler>();

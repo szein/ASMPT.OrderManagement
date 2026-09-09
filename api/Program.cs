@@ -53,8 +53,8 @@ builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend",
-        policy => policy.WithOrigins("http://localhost:5168")
+    options.AddPolicy("AllowedCORS",
+        policy => policy.WithOrigins(builder.Configuration["AllowedCORS"] ?? "")
                         .AllowAnyHeader()
                         .AllowAnyMethod());
 });
@@ -132,7 +132,7 @@ else
     app.UseHttpsRedirection();
 }
 
-app.UseCors("AllowFrontend");
+app.UseCors("AllowedCORS");
 
 app.UseAuthentication();
 app.UseAuthorization();
