@@ -47,7 +47,7 @@ stages:
             displayName: 'Build API and Web Projects'
 
           # Execute xUnit Tests
-          - script: dotnet test xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx --results-directory "$(Agent.TempDirectory)/TestResults"
+          - script: dotnet test xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --logger trx --results-directory "$(Agent.TempDirectory)/TestResults"
             workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Run xUnit Tests'
 
