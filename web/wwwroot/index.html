@@ -32,6 +32,19 @@
     <script src="_content/Microsoft.Authentication.WebAssembly.Msal/AuthenticationService.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
+    <script>
+        window.downloadJsonFile = (fileName, json) => {
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = fileName;
+            link.click();
+
+            URL.revokeObjectURL(url);
+        };
+    </script>
     
 </body>
 
