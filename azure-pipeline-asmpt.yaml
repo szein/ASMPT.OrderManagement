@@ -1,69 +1,83 @@
-name: Build, Test, and Deploy Pipeline
+trigger:
+  branches:
+    include:
+      - main
+      - master
 
-'on':
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+pr:
+  branches:
+    include:
+      - main
 
-jobs:
-  build-and-test:
-    name: Build & Test Applications
-    runs-on: ubuntu-latest
+variables:
+  buildConfiguration: 'Release'
 
-    steps:
-      # 1. Checkout repository code
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+stages:
+  # STAGE 1: Build & Test
+  - stage: BuildAndTest
+    displayName: 'Build and Test Applications'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build & Unit Tests'
+        pool:
+          vmImage: 'ubuntu-latest'
 
-      # 2. Setup .NET SDK
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
+        steps:
+          # Setup .NET SDK
+          - task: UseDotNet@2
+            displayName: 'Use .NET SDK 8.x'
+            inputs:
+              packageType: 'sdk'
+              version: '10.0.x'
 
-      # 3. Restore dependencies
-      - name: Restore Dependencies
-        run: dotnet restore
+          # Restore
+          - script: dotnet restore
+            displayName: 'Restore Dependencies'
 
-      # 4. Build API and Web projects
-      - name: Build Projects
-        run: dotnet build --no-restore --configuration Release
+          # Build Projects
+          - script: dotnet build --no-restore --configuration $(buildConfiguration)
+            displayName: 'Build API and Web Projects'
 
-      # 5. Execute API xUnit Tests
-      - name: Run API xUnit Tests
-        run: dotnet test ./xtest/api.Tests/api.Tests.csproj --configuration Release --no-build --verbosity normal
+          # Execute xUnit Tests
+          - script: dotnet test ./xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx
+            displayName: 'Run xUnit Tests'
 
-  # Here i will handle container integration
-  container-build:
-    name: Build Container Image (Pending)
-    runs-on: ubuntu-latest
-    needs: build-and-test
+          # Publish test results inside Azure DevOps UI
+          - task: PublishTestResults@2
+            displayName: 'Publish Test Results'
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: 'VSTest'
+              testResultsFiles: '**/*.trx'
 
-    # Work in progress
-    if: false 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # STAGE 2: Container Build (Pending / Disabled)
+  - stage: ContainerBuild
+    displayName: 'Build Container Image (Pending)'
+    dependsOn: BuildAndTest
+    condition: false # temp change when container ready 
+    jobs:
+      - job: DockerBuildJob
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: echo "Container build is currently disabled."
+            displayName: 'Disabled Step'
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker Image
-        run: |
-          # Example build command when ready:
-          # docker build -f path/to/Dockerfile -t my-api:latest .
-          echo "Container step is currently disabled."
-
-  deploy:
-    name: Deploy Application
-    runs-on: ubuntu-latest
-    needs: build-and-test
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Deploy Step
-        run: |
-          echo "WIP..."
+  # STAGE 3: Deployment Section
+  - stage: Deploy
+    displayName: 'Deploy Application'
+    dependsOn: BuildAndTest # Only runs if Build & Test stage succeeds
+    condition: succeeded()
+    jobs:
+      - deployment: DeployJob
+        displayName: 'Deploy to Target Infrastructure'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'Production' # environment
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "Work in progress ..."
+                  displayName: 'Deploy'
