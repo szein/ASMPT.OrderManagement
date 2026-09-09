@@ -10,35 +10,14 @@ using Microsoft.Identity.Web.Resource;
 public class ComponentsController : ControllerBase
 {
     private readonly IComponentService _componentService;
-    private readonly IComponentTypeService _componentTypeService;
     private readonly ILogger<ComponentsController> _logger;
 
     public ComponentsController(
         IComponentService componentService,
-        IComponentTypeService componentTypeService,
         ILogger<ComponentsController> logger)
     {
         _componentService = componentService;
-        _componentTypeService = componentTypeService;
         _logger = logger;
-    }
-
-    [HttpGet("types")]
-    public async Task<ActionResult<List<ComponentType>>> GetAllTypes()
-    {
-        try { return Ok(await _componentTypeService.GetAllAsync()); }
-        catch (Exception ex) { return HandleException(ex, "GetAllTypes"); }
-    }
-
-    [HttpGet("types/{id:int}")]
-    public async Task<ActionResult<ComponentType>> GetTypeById(int id)
-    {
-        try
-        {
-            var componentType = await _componentTypeService.GetByIdAsync(id);
-            return componentType is null ? NotFound() : Ok(componentType);
-        }
-        catch (Exception ex) { return HandleException(ex, $"GetTypeById({id})"); }
     }
 
     [HttpGet]

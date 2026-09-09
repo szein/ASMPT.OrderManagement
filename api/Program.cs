@@ -46,7 +46,6 @@ builder.Services.AddScoped<IBoardService, BoardService>();
 builder.Services.AddScoped<IComponentRepository, ComponentRepository>();
 builder.Services.AddScoped<IComponentService, ComponentService>();
 builder.Services.AddScoped<IComponentTypeRepository, ComponentTypeRepository>();
-builder.Services.AddScoped<IComponentTypeService, ComponentTypeService>();
 
 //Services and Controllers
 builder.Services.AddControllers();

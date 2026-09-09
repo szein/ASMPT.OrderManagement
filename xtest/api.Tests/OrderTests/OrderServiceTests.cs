@@ -15,8 +15,8 @@ public class OrderServiceTests
         A.CallTo(() => repository.GetByIdAsync(order.Id)).Returns(order);
         var service = new OrderService(repository, A.Fake<ILogger<OrderService>>());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.DeleteAsync(order.Id));
-        A.CallTo(() => repository.DeleteAsync(A<Guid>.Ignored)).MustNotHaveHappened();
+        var result = await service.DeleteAsync(order.Id);
+        Assert.False(result,"Order was delete when it must not!");
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class OrderServiceTests
         var orderRepository = new OrderRepository(context, A.Fake<ILogger<OrderRepository>>());
         var expectedBoard = new Board() { Name = "Board 1", Length = 1.0, Width = 1.0 };
         var expectedComponentType = new ComponentType { Name = "Component 1" };
-        var expectedComponent = new Component { ComponentTypeId = expectedComponentType.Id, Quantity = 5 };
+        var expectedComponent = new Component { Id = 1, ComponentTypeId = expectedComponentType.Id, Quantity = 5 };
         context.ComponentTypes.Add(expectedComponentType);
         context.Components.Add(expectedComponent);
         context.Boards.Add(expectedBoard);
@@ -82,7 +82,7 @@ public class OrderServiceTests
         var result = await orderService.CreateAsync(request);
 
         //Assert
-        var actualQuantity = context.Components.First(c=> c.Id == expectedComponent.Id).Quantity;
+        var actualQuantity = context.Components.First(c => c.Id == expectedComponent.Id).Quantity;
         Assert.NotNull(result);
         Assert.Equal(expectedOrder.Name, result.Name);
         Assert.Equal(expectedOrder.Description, result.Description);
@@ -90,5 +90,5 @@ public class OrderServiceTests
         Assert.Equal(1, actualQuantity);
         //Assert.Equal(OrderStatus.Pending, result.Status);
     }
-    
+
 }

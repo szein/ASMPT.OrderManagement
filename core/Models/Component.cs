@@ -18,6 +18,7 @@ public class Component : Auditable
         set => status = value;
     }
     
+    [JsonIgnore]
     public ComponentType ComponentType { get; set; } = null!;
     public ICollection<BoardComponent> BoardComponents { get; set; } = new List<BoardComponent>();
     
