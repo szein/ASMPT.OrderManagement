@@ -1,6 +1,6 @@
 name: Build, Test, and Deploy Pipeline
 
-on:
+'on':
   push:
     branches: [ "main" ]
   pull_request:
@@ -20,7 +20,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x' # Adjust to match your .NET version (e.g. 8.0, 10.0)
+          dotnet-version: '10.0.x'
 
       # 3. Restore dependencies
       - name: Restore Dependencies
