@@ -58,7 +58,7 @@ stages:
             inputs:
               searchFolder: '$(System.DefaultWorkingDirectory)'
               testResultsFormat: 'VSTest'
-              testResultsFiles: '$(System.DefaultWorkingDirectory)/xtest/**/*.trx'
+              testResultsFiles: '$(System.DefaultWorkingDirectory)/xtest/api.Tests/TestResults/*.trx'
 
   # STAGE 2: Container Build (Pending / Disabled)
   - stage: ContainerBuild

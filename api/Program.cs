@@ -53,7 +53,7 @@ builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowedCORS",
-        policy => policy.WithOrigins(builder.Configuration["AllowedCORS"] ?? "")
+        policy => policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigin").Get<string[]>() ?? [])
                         .AllowAnyHeader()
                         .AllowAnyMethod());
 });

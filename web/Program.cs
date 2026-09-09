@@ -17,7 +17,7 @@ builder.Services.AddHttpClient("ASMPT_API", client =>
         sp.GetRequiredService<AuthorizationMessageHandler>()
           .ConfigureHandler(
               authorizedUrls: new[] { builder.Configuration["ApiSettings:BaseUrl"] },
-              scopes: new[] { builder.Configuration["ApiSettings:Scopes"] }
+              scopes: builder.Configuration.GetSection("ApiSettings:Scopes").Get<string[]>()
             )
         );
 
@@ -25,7 +25,6 @@ builder.Services.AddMsalAuthentication<RemoteAuthenticationState, CustomUserAcco
 {
     builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
         options.ProviderOptions.DefaultAccessTokenScopes.Add("api://43353f78-34d4-4a75-86aa-07b8b11eaf8a/user_access");
-        options.ProviderOptions.DefaultAccessTokenScopes.Add("api://43353f78-34d4-4a75-86aa-07b8b11eaf8a/admin_access");
         options.ProviderOptions.LoginMode = "redirect";
     }).AddAccountClaimsPrincipalFactory<RemoteAuthenticationState, CustomUserAccount, CustomAccountFactory>();
 
