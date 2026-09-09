@@ -29,17 +29,26 @@ stages:
             inputs:
               packageType: 'sdk'
               version: '10.0.x'
+  
+          - script: |
+              echo "Current directory: $(pwd)"
+              echo "Files at root:"
+              ls -la
+            displayName: 'Check Pipeline Working Directory'
 
           # Restore
-          - script: dotnet restore
+          - script: dotnet restore 
+            workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Restore Dependencies'
 
           # Build Projects
           - script: dotnet build --no-restore --configuration $(buildConfiguration)
+            workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Build API and Web Projects'
 
           # Execute xUnit Tests
           - script: dotnet test ./xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx
+            workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Run xUnit Tests'
 
           # Publish test results inside Azure DevOps UI
@@ -67,7 +76,7 @@ stages:
   - stage: Deploy
     displayName: 'Deploy Application'
     dependsOn: BuildAndTest # Only runs if Build & Test stage succeeds
-    condition: succeeded()
+    condition: false # succeeded() when work is done
     jobs:
       - deployment: DeployJob
         displayName: 'Deploy to Target Infrastructure'
