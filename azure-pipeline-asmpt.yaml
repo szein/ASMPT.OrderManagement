@@ -53,10 +53,10 @@ stages:
 
           # Publish test results inside Azure DevOps UI
           - task: PublishTestResults@2
-            workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Publish Test Results'
             condition: succeededOrFailed()
             inputs:
+              searchFolder: '$(Build.SourcesDirectory)/api'
               testResultsFormat: 'VSTest'
               testResultsFiles: '**/*.trx'
 
