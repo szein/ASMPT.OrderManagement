@@ -37,17 +37,17 @@ stages:
             displayName: 'Check Pipeline Working Directory'
 
           # Restore
-          - script: dotnet restore 
+          - script: dotnet restore api/api.csproj
             workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Restore Dependencies'
 
           # Build Projects
-          - script: dotnet build --no-restore --configuration $(buildConfiguration)
+          - script: dotnet build api/api.csproj --no-restore --configuration $(buildConfiguration)
             workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Build API and Web Projects'
 
           # Execute xUnit Tests
-          - script: dotnet test ./xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx
+          - script: dotnet test xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx
             workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Run xUnit Tests'
 
