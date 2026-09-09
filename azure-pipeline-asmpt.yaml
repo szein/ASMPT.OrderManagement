@@ -47,7 +47,7 @@ stages:
             displayName: 'Build API and Web Projects'
 
           # Execute xUnit Tests
-          - script: dotnet test xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx
+          - script: dotnet test xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx --results-directory $(System.DefaultWorkingDirectory)/xtest/TestResults
             workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Run xUnit Tests'
 
@@ -58,7 +58,7 @@ stages:
             inputs:
               searchFolder: '$(System.DefaultWorkingDirectory)'
               testResultsFormat: 'VSTest'
-              testResultsFiles: '$(System.DefaultWorkingDirectory)/xtest/api.Tests/TestResults/*.trx'
+              testResultsFiles: '$(System.DefaultWorkingDirectory)/xtest/TestResults/*.trx'
 
   # STAGE 2: Container Build (Pending / Disabled)
   - stage: ContainerBuild
