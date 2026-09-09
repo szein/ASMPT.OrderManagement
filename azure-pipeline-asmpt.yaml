@@ -47,14 +47,14 @@ stages:
             displayName: 'Build API and Web Projects'
 
           # Execute xUnit Tests
-          - script: dotnet test xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx --results-directory $(System.DefaultWorkingDirectory)/xtest/TestResults/
+          - script: dotnet test xtest/api.Tests/api.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx --results-directory "$(Agent.TempDirectory)/TestResults"
             workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Run xUnit Tests'
 
           - script: |
-              echo "Searching for all .trx files in workspace:"
-              find $(System.DefaultWorkingDirectory) -name "*.trx"
-            displayName: 'Locate TRX File Path'
+              echo "Searching for TRX files..."
+              find "$(Agent.TempDirectory)" -type f -name "*.trx" -print
+            displayName: 'Locate TRX Files'
 
           # Publish test results inside Azure DevOps UI
           - task: PublishTestResults@2
@@ -62,7 +62,10 @@ stages:
             condition: succeededOrFailed()
             inputs:
               testResultsFormat: 'VSTest'
-              testResultsFiles: '$(System.DefaultWorkingDirectory)/xtest/TestResults/**/*.trx'
+              testResultsFiles: '$(Agent.TempDirectory)/TestResults/*.trx'
+              searchFolder: '$(Agent.TempDirectory)'
+              mergeTestResults: true
+              failTaskOnFailedTests: false
 
   # STAGE 2: Container Build (Pending / Disabled)
   - stage: ContainerBuild
