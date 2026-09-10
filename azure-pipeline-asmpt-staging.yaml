@@ -10,6 +10,8 @@ pr:
 
 variables:
   buildConfiguration: 'Release'
+  registry: ghcr.io
+  rig-owner: szein
 
 stages:
   # STAGE 1: Build & Test
@@ -28,12 +30,6 @@ stages:
             inputs:
               packageType: 'sdk'
               version: '10.0.x'
-  
-          - script: |
-              echo "Current directory: $(pwd)"
-              echo "Files at root:"
-              ls -la
-            displayName: 'Check Pipeline Working Directory'
 
           # Restore
           - script: dotnet restore api/api.csproj
@@ -50,11 +46,6 @@ stages:
             workingDirectory: $(Build.SourcesDirectory)
             displayName: 'Run xUnit Tests'
 
-          - script: |
-              echo "Searching for TRX files..."
-              find "$(Agent.TempDirectory)" -type f -name "*.trx" -print
-            displayName: 'Locate TRX Files'
-
           # Publish test results inside Azure DevOps UI
           - task: PublishTestResults@2
             displayName: 'Publish Test Results'
@@ -70,14 +61,37 @@ stages:
   - stage: ContainerBuild
     displayName: 'Build Container Image (Pending)'
     dependsOn: BuildAndTest
-    condition: false # temp change when container ready 
+    condition: succeeded()
     jobs:
-      - job: DockerBuildJob
+      - job: API
         pool:
-          vmImage: 'ubuntu-latest'
+          vmImage: ubuntu-latest
         steps:
-          - script: echo "Container build is currently disabled."
-            displayName: 'Disabled Step'
+        - task: Docker@2
+          inputs:
+            containerRegistry: 'ghcr-connection'
+            repository: '$(rig-owner)/api'
+            command: 'buildAndPush'
+            Dockerfile: 'api/Dockerfile'
+            buildContext: '$(Build.SourcesDirectory)'
+            tags: |
+              $(Build.BuildId)
+              latest
+
+      - job: Web
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+        - task: Docker@2
+          inputs:
+            containerRegistry: 'ghcr-connection'
+            repository: '$(rig-owner)/web'
+            command: 'buildAndPush'
+            Dockerfile: 'web/Dockerfile'
+            buildContext: '$(Build.SourcesDirectory)'
+            tags: |
+              $(Build.BuildId)
+              latest
 
   # STAGE 3: Deployment Section
   - stage: Deploy
