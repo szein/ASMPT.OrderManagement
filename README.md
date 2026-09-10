@@ -1,32 +1,42 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+ASMPT Order managment Application
 
 # Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+1.	Installate dependencies
+2.	Installate Software dependencies (docker, WSL for windwos ..etc)
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+# Build and Run Containers
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+Before you run docker commands:
+**Make sure that you are in the root folder of the repository.**
 
-# Run Api Container
+
+
+# API
+
+## API ENVIRONMENT Values:
+Use the  **ASPNETCORE_ENVIRONMENT** variale to set one of the following 
+- Development -> run it localy **without** database prsistance
+- Staging -> run it localy **with** database prsistance
+- Production or (none) -> for prduction secnario
 
 ```
- docker build -f api/Dockerfile -t my-api .
+ docker build -f api/Dockerfile -t api . 
 
- docker run --rm -d -p 8000:8080 --name api-test -t api
+ docker run --rm -d -p 8088:8080 -e ASPNETCORE_ENVIRONMENT=Staging -v sqlite-data:/ASMPT.stage/api/data --name api-dev -t api
+```
 
- docker run --rm -d -p 8000:8080 -e ASPNETCORE_ENVIRONMENT=DEVELOPMENT --name api-dev -t api
 
- # TODOs
-- Check CROS roles if there is need to change it. Now allowing "localhost:5168"
+ # Web
+ Run the following command to start the web application
+
+ ```
+ docker build -f web/Dockerfile -t web .
+
+ docker run --rm -d -p 8008:80 --name web-dev -t web
+ ```
+
+
+
+

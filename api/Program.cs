@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
-using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,8 +16,8 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services.AddOpenApi();
 
 //DbContext
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                      ?? "Data Source=ASMPTOrderManagement.db";
+var connectionString = builder.Configuration.GetConnectionString("SqliteConnection")
+                      ?? "Data Source=DB-not-from-appsettings.db";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));

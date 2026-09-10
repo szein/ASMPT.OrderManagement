@@ -56,7 +56,8 @@ public class ComponentsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "WriterApiScope")]
+    //TODO: Improve thuoriztion management in the app
+    // [Authorize(Policy = "WriterApiScope")]
     public async Task<ActionResult<Component>> Create([FromBody] CreateComponentRequest request)
     {
         _logger.LogInformation("POST /api/components requested for component type {ComponentTypeName}.", request?.Name);
