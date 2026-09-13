@@ -16,7 +16,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services.AddOpenApi();
 
 //DbContext
-var connectionString = builder.Configuration.GetConnectionString("SqliteConnection")
+var connectionString = builder.Configuration.GetConnectionString($"{builder.Configuration["DefaultConnectionName"]}")
                       ?? "Data Source=DB-not-from-appsettings.db";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -62,6 +62,13 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+    await dbContext.Database.OpenConnectionAsync();
+    if (builder.Configuration["DefaultConnectionName"]?.ToLowerInvariant() == "SqliteConnection".ToLowerInvariant())
+    {
+        await dbContext.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=DELETE;");
+    }
+
+
     await dbContext.Database.MigrateAsync();
 
     if (!await dbContext.Boards.AnyAsync() && !await dbContext.ComponentTypes.AnyAsync())
@@ -69,6 +76,7 @@ await using (var scope = app.Services.CreateAsyncScope())
         await SeedDatabaseAsync(dbContext);
         await dbContext.SaveChangesAsync();
     }
+    await dbContext.Database.CloseConnectionAsync();
 }
 
 //TODO: move the seeding to better place

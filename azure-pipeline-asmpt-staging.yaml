@@ -75,7 +75,7 @@ stages:
             Dockerfile: 'api/Dockerfile'
             buildContext: '$(Build.SourcesDirectory)'
             tags: |
-              $(Build.BuildId)
+              asmpt-api
               latest
 
       - job: Web
@@ -90,7 +90,7 @@ stages:
             Dockerfile: 'web/Dockerfile'
             buildContext: '$(Build.SourcesDirectory)'
             tags: |
-              $(Build.BuildId)
+              asmpt-web
               latest
 
   # STAGE 3: Deployment Section
